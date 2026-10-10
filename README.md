@@ -216,7 +216,7 @@ POST_EVENT_SECONDS = 15
 When an event occurs:
 
 ```text
-                Suspicious Event
+                Suspicious Event   
                        ↓
                        ●
                        │
