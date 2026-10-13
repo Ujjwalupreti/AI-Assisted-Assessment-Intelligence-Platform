@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import Config
 from database import Base, engine
-import models # MUST import models so metadata is registered
+import models
 
 # Ensure tables are created
 Base.metadata.create_all(bind=engine)
@@ -64,5 +64,5 @@ app = create_app()
 
 if __name__ == '__main__':
     import uvicorn
-    print(" Server Starting on Port 5001...")
+    print(" Server Starting on Port 5002...")
     uvicorn.run("app:app", host='0.0.0.0', port=5001, reload=True)
