@@ -27,7 +27,7 @@ def create_user(data: dict = Body(...), db: Session = Depends(get_db), admin: Us
     try:
         username = data.get('username', '').strip().lower()
         password = data.get('password')
-        role = data.get('role', 'student') # Default to student
+        role = data.get('role', 'student') 
         
         enrollment_id = data.get('enrollment_id')
         if enrollment_id and str(enrollment_id).strip():
@@ -44,7 +44,7 @@ def create_user(data: dict = Body(...), db: Session = Depends(get_db), admin: Us
         # Create
         new_user = User(
             username=username,
-            email=f"{username}@exam.com", # Auto-generate email
+            email=f"{username}@exam.com", 
             role=role,
             enrollment_id=enrollment_id
         )
