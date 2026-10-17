@@ -85,7 +85,7 @@ Return ONLY valid JSON:
             result = llm(prompt)
             if result and "label" in result:
                 label = result["label"]
-                # Validate it's in our taxonomy
+               
                 if label not in CS_TOPICS:
                     label = "General CS"
                 return {
@@ -109,7 +109,7 @@ Return ONLY valid JSON:
         if scores:
             sorted_topics = sorted(scores.items(), key=lambda x: x[1], reverse=True)
             best_topic, best_count = sorted_topics[0]
-            # Confidence is a rough score: more keyword matches = more confidence, capped at 0.65
+        
             confidence = min(0.65, 0.3 + best_count * 0.1)
             alternatives = [
                 {"label": t, "confidence": round(min(0.5, 0.2 + c * 0.1), 2)}
@@ -150,7 +150,7 @@ Return ONLY valid JSON:
 
     def _heuristic_bloom(self, text: str) -> dict:
         text_lower = text.lower()
-        # Evaluate from highest to lowest cognitive level
+       
         for level in ["Create", "Evaluate", "Analyze", "Apply", "Understand", "Remember"]:
             keywords = BLOOM_KEYWORDS.get(level, [])
             matches = [kw for kw in keywords if kw in text_lower]
@@ -210,7 +210,6 @@ Return ONLY valid JSON:
         factors = []
         score = 0
 
-        # Signal 1: Question length (longer often = more complex)
         word_count = len(text.split())
         if word_count > 50:
             score += 2
@@ -218,7 +217,6 @@ Return ONLY valid JSON:
         elif word_count > 25:
             score += 1
 
-        # Signal 2: Technical jargon count
         jargon_words = ["algorithm", "complexity", "proof", "theorem", "optimize", "concurrency", "distributed", "pipeline"]
         jargon_count = sum(1 for w in jargon_words if w in text.lower())
         if jargon_count >= 3:
@@ -227,13 +225,11 @@ Return ONLY valid JSON:
         elif jargon_count >= 1:
             score += 1
 
-        # Signal 3: Multi-step indicators
         multi_step_words = ["calculate", "derive", "prove", "demonstrate", "compare and", "analyze"]
         if any(w in text.lower() for w in multi_step_words):
             score += 1
             factors.append("Multi-step reasoning indicator detected")
 
-        # Bloom as a weak prior, not the sole determiner
         if bloom_label in ["Create", "Evaluate"]:
             score += 1
             factors.append(f"High-order Bloom level ({bloom_label}) suggests complexity")
