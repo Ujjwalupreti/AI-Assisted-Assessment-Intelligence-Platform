@@ -180,7 +180,7 @@ Normal event
 No evidence stored
 ```
 
-Whereas:
+Whereas: 
 
 ```text
 Multiple voices detected
