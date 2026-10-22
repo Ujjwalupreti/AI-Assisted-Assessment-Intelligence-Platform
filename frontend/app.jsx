@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/LoginPage';
 import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
-import AdminDashboard from './pages/AdminDashboard'; // <--- Admin Import
+import AdminDashboard from './pages/AdminDashboard'; 
 import { useAuth } from './AuthContext';
 
 // Helper component to protect routes
@@ -15,7 +15,7 @@ const PrivateRoute = ({ children, role }) => {
       return <Navigate to="/login" />;
   }
 
-  // 2. If logged in but wrong role, go back to Login (or could be 403 page)
+  // 2. If logged in but wrong role, go back to Login
   if (role && user.role?.toLowerCase() !== role.toLowerCase()) {
       return <Navigate to="/login" />;
   }
