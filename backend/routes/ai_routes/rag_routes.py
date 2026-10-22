@@ -67,7 +67,7 @@ def upload_document(data: dict = Body(...), db: Session = Depends(get_db), teach
         # Process chunks
         chunks = process_document_text(content_text)
         if chunks:
-            store_document_chunks(doc.id, chunks) # note: store_document_chunks needs to be checked if it uses db.session
+            store_document_chunks(doc.id, chunks) 
             
         return {"message": "Document uploaded and processed successfully.", "id": doc.id, "chunks": len(chunks), "extracted_topics": extracted_topics}
     except HTTPException:
