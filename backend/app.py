@@ -4,7 +4,6 @@ from config import Config
 from database import Base, engine
 import models
 
-# Ensure tables are created
 Base.metadata.create_all(bind=engine)
 
 def create_app():
