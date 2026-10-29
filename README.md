@@ -1156,7 +1156,7 @@ The system aims to:
 - Correlate audio with other examination signals
 - Maintain an auditable teacher decision process
 - Follow data minimization and privacy-aware principles
-
+  
 ---
 
 # 30. License
