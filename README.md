@@ -186,7 +186,7 @@ Whereas:
 Multiple voices detected
        ↓
 Potential anomaly
-       ↓
+       ↓ 
 Create suspicious event
        ↓
 Preserve evidence
