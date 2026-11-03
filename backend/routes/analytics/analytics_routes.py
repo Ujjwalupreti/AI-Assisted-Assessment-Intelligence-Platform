@@ -5,7 +5,7 @@ from database import get_db
 from auth_middleware import get_current_user, get_teacher_user
 import json
 
-analytics_bp = APIRouter()
+analytics_bp = APIRouter() 
 
 # ---  1. QUESTION ANALYTICS (EMPIRICAL DIFFICULTY) ---
 @analytics_bp.get('/questions/{question_id}')
