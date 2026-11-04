@@ -15,13 +15,13 @@ from config import Config
 auth_bp = APIRouter()
 exam_bp = APIRouter()
 
-# --- 📸 SERVE UPLOADED IMAGES TO TEACHER ---
+# --- SERVE UPLOADED IMAGES TO TEACHER ---
 @exam_bp.get('/uploads/{filename}')
 def serve_upload(filename):
     upload_dir = os.path.join(os.getcwd(), 'static', 'uploads')
     return FileResponse(os.path.join(upload_dir, filename))
 
-# --- 🗑 DELETE RESULT ---
+# --- DELETE RESULT ---
 @exam_bp.delete('/results/{result_id}')
 def delete_result(result_id, db: Session = Depends(get_db), current_user: User = Depends(get_teacher_user)):
     try:
@@ -185,7 +185,7 @@ def create_exam(db: Session = Depends(get_db), current_user: User = Depends(get_
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
-# --- GET EXAMS (🚨 WITH TEACHER PRIVACY & PASSWORD FLAGS) ---
+# --- GET EXAMS (WITH TEACHER PRIVACY & PASSWORD FLAGS) ---
 @exam_bp.get('')
 @exam_bp.get('/')
 def get_exams(db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
@@ -231,7 +231,7 @@ def get_exams(db: Session = Depends(get_db), current_user: User = Depends(get_cu
         import logging; logging.error(f"GET EXAMS ERROR: {e}")
         return JSONResponse(status_code=500, content={"message": "Error"})
 
-# --- ℹ️ GET EXAM DETAILS FOR LOBBY ---
+# --- GET EXAM DETAILS FOR LOBBY ---
 @exam_bp.get('/{exam_id}/details')
 def get_exam_details(exam_id, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
     try:
@@ -257,7 +257,7 @@ def get_exam_details(exam_id, db: Session = Depends(get_db), current_user: User 
         import logging; logging.error(f"GET DETAILS ERROR: {e}")
         return JSONResponse(status_code=500, content={"message": "Error"})
 
-# --- 🔒 VERIFY EXAM PASSWORD ---
+# --- VERIFY EXAM PASSWORD ---
 @exam_bp.post('/{exam_id}/verify_password')
 def verify_password(exam_id, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
     try:
@@ -274,7 +274,7 @@ def verify_password(exam_id, db: Session = Depends(get_db), current_user: User =
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "Error verifying password"})
 
-# --- 📝 TOGGLE EXAM VISIBILITY (PUBLISH/UNPUBLISH) ---
+# --- TOGGLE EXAM VISIBILITY (PUBLISH/UNPUBLISH) ---
 @exam_bp.put('/{exam_id}/toggle_publish')
 def toggle_publish(exam_id, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
     try:
@@ -300,7 +300,7 @@ def delete_exam(exam_id, db: Session = Depends(get_db), current_user: User = Dep
             if str(exam.creator_id) != str(current_user.id) and current_user.role != 'admin':
                 return JSONResponse(status_code=403, content={"message": "Unauthorized: You do not own this exam!"})
                 
-            # 🚨 FIX: Delete associated questions and attempts first!
+            # FIX: Delete associated questions and attempts first!
             attempts = db.query(ExamAttempt).filter_by(exam_id=exam_id).all()
             for attempt in attempts:
                 db.query(Answer).filter_by(attempt_id=attempt.id).delete()
@@ -315,14 +315,14 @@ def delete_exam(exam_id, db: Session = Depends(get_db), current_user: User = Dep
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
-# --- 📊 GET RESULTS FOR TEACHER DASHBOARD (🚨 WITH SECURITY LOCK) ---
+# --- GET RESULTS FOR TEACHER DASHBOARD (WITH SECURITY LOCK) ---
 @exam_bp.get('/{exam_id}/results')
 def get_results(exam_id, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
     try:
         user_id = current_user.id
         user = db.get(User, user_id)
         
-        # 🚨 SECURITY LOCK: Make sure this teacher actually created this exam!
+        # SECURITY LOCK: Make sure this teacher actually created this exam!
         if user.role == 'teacher':
             exam = db.get(Exam, exam_id)
             if not exam or str(exam.creator_id) != str(user.id):
@@ -360,7 +360,7 @@ def get_results(exam_id, db: Session = Depends(get_db), current_user: User = Dep
         import logging; logging.error(f"GET RESULTS ERROR: {e}")
         return JSONResponse(status_code=500, content={"message": "Error fetching results"})
 
-# --- 🤖 EVALUATE SUBJECTIVE ANSWERS ---
+# --- EVALUATE SUBJECTIVE ANSWERS ---
 from pydantic import BaseModel
 class SubjectiveEvalRequest(BaseModel):
     pass
@@ -397,7 +397,7 @@ def evaluate_exam_subjective_answers(exam_id, student_id, request_data: Subjecti
         import logging; logging.error(f"EVALUATE ERROR: {e}")
         return JSONResponse(status_code=500, content={"message": "Error evaluating answers"})
 
-# --- ✍️ TEACHER OVERRIDE GRADE ---
+# --- TEACHER OVERRIDE GRADE ---
 class GradeOverrideRequest(BaseModel):
     answer_id: int
     new_marks: float
