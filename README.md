@@ -105,7 +105,7 @@ Audio Stream
 
 ---
 
-## 3.2 Rolling Audio Buffer
+## 3.2 Rolling Audio Buffer 
 
 The system continuously maintains a temporary buffer containing only recent audio.
 
