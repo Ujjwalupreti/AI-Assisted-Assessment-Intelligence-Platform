@@ -1,0 +1,378 @@
+{
+  "timestamp": "2026-11-12T18:02:10.593389+00:00",
+  "total_tested": 39,
+  "passed": 39,
+  "failed": 0,
+  "pass_rate": "100.0%",
+  "results": [
+    {
+      "route": "Ping Health Check",
+      "method": "GET",
+      "path": "/api/ping",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Server online"
+    },
+    {
+      "route": "OpenAPI Specification",
+      "method": "GET",
+      "path": "/openapi.json",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "OpenAPI schema valid"
+    },
+    {
+      "route": "Swagger UI",
+      "method": "GET",
+      "path": "/docs",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "HTML docs rendered"
+    },
+    {
+      "route": "Teacher Login",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "JWT issued"
+    },
+    {
+      "route": "Student Login",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "JWT issued"
+    },
+    {
+      "route": "Admin Login",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "JWT issued"
+    },
+    {
+      "route": "Invalid Credential Rejection",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status_code": 401,
+      "expected": 401,
+      "passed": true,
+      "detail": "Rejected correctly"
+    },
+    {
+      "route": "Unauthenticated Protection",
+      "method": "GET",
+      "path": "/api/exams",
+      "status_code": 401,
+      "expected": 401,
+      "passed": true,
+      "detail": "Bearer challenge"
+    },
+    {
+      "route": "Create Exam",
+      "method": "POST",
+      "path": "/api/exams",
+      "status_code": 201,
+      "expected": [
+        200,
+        201
+      ],
+      "passed": true,
+      "detail": "Exam ID=1"
+    },
+    {
+      "route": "List Exams (Teacher)",
+      "method": "GET",
+      "path": "/api/exams",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Exams returned"
+    },
+    {
+      "route": "Get Exam Details",
+      "method": "GET",
+      "path": "/api/exams/1/details",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Details fetched"
+    },
+    {
+      "route": "Update Exam Settings",
+      "method": "PUT",
+      "path": "/api/exams/1/settings",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Settings saved"
+    },
+    {
+      "route": "Toggle Exam Publish",
+      "method": "PUT",
+      "path": "/api/exams/1/toggle_publish",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Published state toggled"
+    },
+    {
+      "route": "Add Question (MCQ)",
+      "method": "POST",
+      "path": "/api/exams/1/questions",
+      "status_code": 201,
+      "expected": [
+        200,
+        201
+      ],
+      "passed": true,
+      "detail": "MCQ created"
+    },
+    {
+      "route": "Add Question (Subjective)",
+      "method": "POST",
+      "path": "/api/exams/1/questions",
+      "status_code": 201,
+      "expected": [
+        200,
+        201
+      ],
+      "passed": true,
+      "detail": "Subjective created"
+    },
+    {
+      "route": "List Exam Questions",
+      "method": "GET",
+      "path": "/api/exams/1/questions",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Found 2 questions"
+    },
+    {
+      "route": "Fetch Global Question Bank",
+      "method": "GET",
+      "path": "/api/exams/bank",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Bank fetched"
+    },
+    {
+      "route": "QIS Single Question Analysis",
+      "method": "POST",
+      "path": "/api/ai/questions/analyze",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Bloom=Remember"
+    },
+    {
+      "route": "QIS Question Analyze Proxy",
+      "method": "POST",
+      "path": "/api/exams/1/questions/analyze",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Proxy route working"
+    },
+    {
+      "route": "Duplicate Group Detection",
+      "method": "GET",
+      "path": "/api/ai/questions/exam/1/duplicates",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Exam duplicates checked"
+    },
+    {
+      "route": "Blueprint Gap Recommendations",
+      "method": "GET",
+      "path": "/api/ai/questions/exam/1/recommendations",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Recommendations engine queried"
+    },
+    {
+      "route": "Submit Teacher Review Decision",
+      "method": "POST",
+      "path": "/api/ai/questions/1/review",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Decision ACCEPT stored"
+    },
+    {
+      "route": "Blueprint Assembly Engine",
+      "method": "POST",
+      "path": "/api/intelligence/assemble",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Constraint solver assembled paper"
+    },
+    {
+      "route": "Fetch Exam Slots",
+      "method": "GET",
+      "path": "/api/intelligence/1/slots",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Slots returned"
+    },
+    {
+      "route": "Start Exam Attempt",
+      "method": "POST",
+      "path": "/api/exams/1/start",
+      "status_code": 201,
+      "expected": [
+        200,
+        201
+      ],
+      "passed": true,
+      "detail": "Attempt ID=1"
+    },
+    {
+      "route": "Log Proctoring Event",
+      "method": "POST",
+      "path": "/api/exams/proctoring_event",
+      "status_code": 200,
+      "expected": [
+        200,
+        201
+      ],
+      "passed": true,
+      "detail": "Tab switch recorded"
+    },
+    {
+      "route": "Proctoring Frame Analysis",
+      "method": "POST",
+      "path": "/api/exams/analyze_frame",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Frame ingestion processed"
+    },
+    {
+      "route": "Submit Exam Responses",
+      "method": "POST",
+      "path": "/api/exams/1/submit",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Score=2.0"
+    },
+    {
+      "route": "Student Self Review",
+      "method": "GET",
+      "path": "/api/exams/1/review",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Review loaded"
+    },
+    {
+      "route": "Teacher Student Review",
+      "method": "GET",
+      "path": "/api/exams/1/review/2",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Detailed answers loaded"
+    },
+    {
+      "route": "AI Subjective Auto-Evaluation",
+      "method": "POST",
+      "path": "/api/exams/1/evaluate",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Dense semantic evaluation executed"
+    },
+    {
+      "route": "Teacher Manual Grade Override",
+      "method": "PUT",
+      "path": "/api/exams/answers/2/grade",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Overridden to 4.5 marks"
+    },
+    {
+      "route": "Ingest Syllabus Document",
+      "method": "POST",
+      "path": "/api/rag/documents",
+      "status_code": 201,
+      "expected": [
+        200,
+        201
+      ],
+      "passed": true,
+      "detail": "Doc ID=1"
+    },
+    {
+      "route": "List Syllabus Documents",
+      "method": "GET",
+      "path": "/api/rag/documents",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Documents listed"
+    },
+    {
+      "route": "Exam Analytics",
+      "method": "GET",
+      "path": "/api/analytics/exam/1",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Score distribution & pass rate"
+    },
+    {
+      "route": "Student Analytics",
+      "method": "GET",
+      "path": "/api/analytics/student/2",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Performance profile loaded"
+    },
+    {
+      "route": "Admin System Stats",
+      "method": "GET",
+      "path": "/api/admin/stats",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "System metrics returned"
+    },
+    {
+      "route": "Admin User Directory",
+      "method": "GET",
+      "path": "/api/admin/users",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Users retrieved"
+    },
+    {
+      "route": "Teacher Student Roster",
+      "method": "GET",
+      "path": "/api/students/list",
+      "status_code": 200,
+      "expected": 200,
+      "passed": true,
+      "detail": "Roster loaded"
+    }
+  ]
+}
