@@ -7,8 +7,8 @@ Adds proper job tracking and percentage updates.
 import traceback
 from models import AIJob, Question
 from database import SessionLocal
-from ai.pipeline import analyze_question_qis
-from ai.qis_persistence import persist_qis_analysis
+from ai.core.pipeline import analyze_question_qis
+from ai.core.qis_persistence import persist_qis_analysis
 
 def background_analyze_batch(job_id, questions_data):
     """

@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from auth_middleware import get_current_user, get_teacher_user
 from database import get_db
 from models import Question, AIJob, Exam, QuestionAiAnalysis, DuplicateGroup, QuestionDuplicate, User
-from ai.pipeline import analyze_question_qis
-from ai.qis_persistence import persist_qis_analysis, get_current_analysis, apply_teacher_review
+from ai.core.pipeline import analyze_question_qis
+from ai.core.qis_persistence import persist_qis_analysis, get_current_analysis, apply_teacher_review
 
 qis_bp = APIRouter()
 
@@ -280,7 +280,7 @@ def deduplicate_questions(db: Session = Depends(get_db), current_user: User = De
         if not exam_id:
             return JSONResponse(status_code=400, content={"message": "exam_id is required"})
 
-        from ai.duplicate_detector import group_duplicates
+        from ai.generation.duplicate_detector import group_duplicates
         result = group_duplicates(exam_id, threshold=threshold)
 
         if "error" in result:
@@ -365,7 +365,7 @@ def review_duplicate_group(group_id, db: Session = Depends(get_db), current_user
             return JSONResponse(status_code=200, content={"message": "All questions kept."})
 
         elif decision == 'ARCHIVE':
-            from ai.duplicate_detector import archive_duplicates
+            from ai.generation.duplicate_detector import archive_duplicates
             keeper_id = data.get('keeper_question_id')
             result = archive_duplicates(group_id, keeper_question_id=keeper_id)
 
@@ -451,7 +451,7 @@ def get_exam_recommendations(exam_id, db: Session = Depends(get_db), current_use
     Returns recommendations for the exam based on blueprint gap analysis.
     """
     try:
-        from ai.recommender import generate_recommendations
+        from ai.assembly.recommender import generate_recommendations
         recommendations = generate_recommendations(exam_id)
         return JSONResponse(status_code=200, content=recommendations)
     except ImportError:

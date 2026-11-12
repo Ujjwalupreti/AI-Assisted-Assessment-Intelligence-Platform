@@ -617,7 +617,7 @@ def submit_exam(exam_id, db: Session = Depends(get_db), current_user: User = Dep
         # Keep original Result for backwards compatibility with Teacher Dashboard
 
         # Keep original Result for backwards compatibility with Teacher Dashboard
-        from ai.proctoring_core import calculate_integrity_score
+        from ai.proctoring.proctoring_core import calculate_integrity_score
         
         # Log legacy proctoring events directly if frontend still uses old counters
         for _ in range(tab_switches):
@@ -853,7 +853,7 @@ def get_student_exam_review_for_teacher(exam_id, student_id, db: Session = Depen
 # ==========================================================
 # 🚨 BULLETPROOF AI PROCTORING ENDPOINT (DEVICE-INDEPENDENT)
 # ==========================================================
-from ai.proctoring_core import process_frame_detections
+from ai.proctoring.proctoring_core import process_frame_detections
 
 @exam_bp.post('/analyze_frame')
 def analyze_frame(db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
@@ -983,7 +983,7 @@ def log_proctoring_event(db: Session = Depends(get_db), current_user: User = Dep
         return JSONResponse(status_code=500, content={"message": "Failed to log event"})
 
 # --- 🧠 AI EVALUATE SUBJECTIVE ANSWERS ---
-from ai.subjective_evaluator import evaluate_subjective_answer
+from ai.evaluation.subjective_evaluator import evaluate_subjective_answer
 
 @exam_bp.post('/{exam_id}/evaluate')
 

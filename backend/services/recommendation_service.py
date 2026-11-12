@@ -3,7 +3,7 @@ Recommendation Service.
 
 Thin service layer that wraps the AI recommender with app context.
 """
-from ai.recommender import generate_recommendations as _generate
+from ai.assembly.recommender import generate_recommendations as _generate
 
 
 def get_recommendations(exam_id: int, weights: dict = None) -> dict:

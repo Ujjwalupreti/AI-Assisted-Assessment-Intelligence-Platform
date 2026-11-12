@@ -61,7 +61,7 @@ class QISModelInference:
         if not self._llm_checked:
             self._llm_checked = True
             try:
-                from ai.llm_client import generate_json
+                from ai.core.llm_client import generate_json
                 self._llm = generate_json
             except Exception:
                 self._llm = None

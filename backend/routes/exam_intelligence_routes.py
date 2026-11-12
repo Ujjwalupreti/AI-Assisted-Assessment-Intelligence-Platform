@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session
 from models import Exam, Question, QuestionAiAnalysis, ExamAnalysis, AIJob, User
 from database import get_db
 from auth_middleware import get_teacher_user
-from ai.pipeline import analyze_question_qis
-from ai.qis_persistence import persist_qis_analysis
-from ai.question_generator import generate_candidate_question
-from ai.assessment_assembler import assemble_assessment
+from ai.core.pipeline import analyze_question_qis
+from ai.core.qis_persistence import persist_qis_analysis
+from ai.generation.question_generator import generate_candidate_question
+from ai.assembly.assessment_assembler import assemble_assessment
 import threading
 
 intelligence_bp = APIRouter()
@@ -213,7 +213,7 @@ def generate_exam_slots(exam_id: int, data: dict = Body(default={}), db: Session
         from services.blueprint_service import get_blueprint
         blueprint = get_blueprint(exam_id)
 
-        from ai.slot_divider import generate_slots, save_slots
+        from ai.assembly.slot_divider import generate_slots, save_slots
         result = generate_slots(
             exam_id=exam_id,
             num_slots=num_slots,

@@ -56,7 +56,7 @@ def get_questions(exam_id: int, db: Session = Depends(get_db), current_user: Use
 def proxy_analyze_question(exam_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(...)):
     """Compatibility route proxying to QIS pipeline."""
     try:
-        from ai.pipeline import analyze_question_qis
+        from ai.core.pipeline import analyze_question_qis
         q_text = data.get('text', '')
         options = data.get('options')
         course = data.get('course')
