@@ -15,18 +15,38 @@ from datetime import datetime
 from models import Question, QuestionAiAnalysis
 
 
-def persist_qis_analysis(db, question_id: int, result: dict, commit: bool = False) -> QuestionAiAnalysis:
+def persist_qis_analysis(*args, **kwargs) -> QuestionAiAnalysis:
     """
     Persist canonical AnalysisResult to the database.
 
-    Args:
-        db: SQLAlchemy session
-        question_id: The Question.id
-        result: Canonical AnalysisResult dict from analyze_question_qis()
-        commit: If True, commit the session. Default False (let caller manage transaction).
-
-    Returns: The new QuestionAiAnalysis record.
+    Supports both signatures:
+        persist_qis_analysis(db, question_id, result, commit=False)
+        persist_qis_analysis(question_id, result, commit=False)  (auto-acquires SessionLocal)
     """
+    own_session = False
+    if len(args) >= 1 and isinstance(args[0], int):
+        from database import SessionLocal
+        db = SessionLocal()
+        own_session = True
+        question_id = args[0]
+        result = args[1] if len(args) > 1 else kwargs.get("result", {})
+        commit = kwargs.get("commit", True)
+    elif len(args) >= 3:
+        db = args[0]
+        question_id = args[1]
+        result = args[2]
+        commit = kwargs.get("commit", False)
+    else:
+        db = kwargs.get("db") or (args[0] if len(args) > 0 else None)
+        question_id = kwargs.get("question_id") or (args[1] if len(args) > 1 else None)
+        result = kwargs.get("result") or (args[2] if len(args) > 2 else {})
+        commit = kwargs.get("commit", False)
+
+    if db is None:
+        from database import SessionLocal
+        db = SessionLocal()
+        own_session = True
+
     q = db.get(Question, question_id)
     if not q:
         raise ValueError(f"Question {question_id} not found")

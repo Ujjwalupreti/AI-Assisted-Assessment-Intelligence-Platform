@@ -24,7 +24,7 @@ def upload_document(data: dict = Body(...), db: Session = Depends(get_db), teach
     """Upload a new document, chunk it, and generate embeddings."""
     try:
         title = data.get('title')
-        content_text = data.get('content_text')
+        content_text = data.get('content_text') or data.get('content')
         course_name = data.get('course_name')
         
         if not title or not content_text:

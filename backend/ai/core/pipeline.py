@@ -69,7 +69,9 @@ def analyze_question_qis(
     expected_topic: Optional[str] = None,
     expected_bloom: Optional[str] = None,
     expected_difficulty: Optional[str] = None,
-    existing_questions: Optional[List[Dict]] = None
+    existing_questions: Optional[List[Dict]] = None,
+    course_name: Optional[str] = None,
+    **kwargs
 ) -> dict:
     """
     Canonical QIS entry point.

@@ -5,6 +5,7 @@ import json
 import threading
 import datetime
 import concurrent.futures
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, Body, Request
 from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
@@ -227,8 +228,7 @@ def reanalyze_question(question_id, db: Session = Depends(get_db), current_user:
 
 
 @qis_bp.post('/{question_id}/review')
-
-def submit_review(question_id, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
+def submit_review(question_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
     """
     POST /api/ai/questions/{question_id}/review
 
@@ -241,10 +241,25 @@ def submit_review(question_id, db: Session = Depends(get_db), current_user: User
         }
     }
     """
-    data = data
-    decision = data.get("decision")
-    if decision not in ("ACCEPTED", "EDITED", "IGNORED"):
+    data = data or {}
+    raw_decision = str(data.get("decision", "")).strip().upper()
+    if raw_decision in ("ACCEPT", "ACCEPTED"):
+        decision = "ACCEPTED"
+    elif raw_decision in ("EDIT", "EDITED"):
+        decision = "EDITED"
+    elif raw_decision in ("IGNORE", "IGNORED"):
+        decision = "IGNORED"
+    else:
         return JSONResponse(status_code=400, content={"message": "Invalid decision. Must be ACCEPTED, EDITED, or IGNORED."})
+
+    # Ensure an analysis exists before reviewing
+    analysis = get_current_analysis(db, question_id)
+    if not analysis:
+        q = db.get(Question, question_id)
+        if q:
+            opts = {"A": q.option_a or "", "B": q.option_b or "", "C": q.option_c or "", "D": q.option_d or ""}
+            qis_res = analyze_question_qis(question_text=q.text, options=opts)
+            persist_qis_analysis(db, q.id, qis_res, commit=True)
 
     success = apply_teacher_review(
         db=db,
@@ -294,17 +309,19 @@ def deduplicate_questions(db: Session = Depends(get_db), current_user: User = De
 
 
 @qis_bp.get('/duplicates')
-
-def get_duplicate_groups(db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
+@qis_bp.get('/exam/{exam_id}/duplicates')
+def get_duplicate_groups(exam_id: Optional[int] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
     """
-    GET /api/ai/questions/duplicates?exam_id=X
+    GET /api/ai/questions/duplicates?exam_id=X or GET /api/ai/questions/exam/{exam_id}/duplicates
     Returns all duplicate groups for an exam.
     """
     try:
-        exam_id_str = request.query_params.get('exam_id')
-        if not exam_id_str:
+        if exam_id is None and request:
+            exam_id_str = request.query_params.get('exam_id')
+            if exam_id_str:
+                exam_id = int(exam_id_str)
+        if not exam_id:
             return JSONResponse(status_code=400, content={"message": "exam_id query parameter is required"})
-        exam_id = int(exam_id_str)
 
         groups = db.query(DuplicateGroup).filter_by(exam_id=exam_id).order_by(
             DuplicateGroup.created_at.desc()

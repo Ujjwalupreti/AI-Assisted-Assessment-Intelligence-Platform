@@ -78,7 +78,7 @@ def add_question(exam_id: int, db: Session = Depends(get_db), current_user: User
             question_type = 'MCQ'
             
         is_subjective = (question_type == 'SUBJECTIVE')
-        reference_answer = data.get('reference_answer')
+        reference_answer = data.get('reference_answer') or data.get('correct_option')
         
         if is_subjective and (not reference_answer or str(reference_answer).strip() == '' or str(reference_answer).strip().lower() == 'none'):
             return JSONResponse(status_code=400, content={"message": "Reference answer is required for subjective questions."})

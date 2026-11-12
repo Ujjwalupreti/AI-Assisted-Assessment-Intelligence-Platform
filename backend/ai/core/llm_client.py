@@ -14,7 +14,7 @@ import threading
 from typing import Optional, Any
 
 # Timeout configuration
-LLM_TIMEOUT_SECONDS = 30
+LLM_TIMEOUT_SECONDS = int(os.environ.get("LLM_TIMEOUT_SECONDS", "3"))
 
 
 def get_gemini_client():

@@ -1069,7 +1069,7 @@ def override_grade(answer_id, db: Session = Depends(get_db), current_user: User 
             return JSONResponse(status_code=403, content={"message": "Unauthorized"})
             
         data = data
-        new_marks = data.get('marks')
+        new_marks = data.get('marks') if data.get('marks') is not None else data.get('marks_awarded')
         feedback = data.get('feedback')
         
         ans = db.get(Answer, answer_id)
