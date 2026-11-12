@@ -1,0 +1,7 @@
+/* src/app.css */
+@import './styles/theme.css';
+@import './styles/global.css';
+@import './styles/components.css';
+@import './styles/forms.css';
+@import './styles/dashboard.css';
+@import './styles/responsive.css';

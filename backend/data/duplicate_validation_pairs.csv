@@ -1,0 +1,70 @@
+question_a,question_b,expected_relationship
+What is a binary tree?,What is a binary tree?,EXACT_DUPLICATE
+Define normalization in DBMS.,Define normalization in DBMS.,EXACT_DUPLICATE
+What is the OSI model?,What is the OSI model?,EXACT_DUPLICATE
+What kind of hierarchical structure is known as a binary tree?,Explain the characteristics of a binary tree data structure.,SEMANTIC_DUPLICATE
+Describe the 1st Normal Form in database management.,What are the requirements for a table to be in 1NF?,SEMANTIC_DUPLICATE
+How does a router work?,Explain the primary function of a network router.,SEMANTIC_DUPLICATE
+What is the time complexity of bubble sort?,How fast does bubble sort execute in Big O notation?,SEMANTIC_DUPLICATE
+Explain Polymorphism.,What does polymorphism mean in Object Oriented Programming?,SEMANTIC_DUPLICATE
+How does a stack work?,Explain the LIFO principle of a stack.,SEMANTIC_DUPLICATE
+Compare TCP and UDP.,What are the main differences between TCP and UDP protocols?,SEMANTIC_DUPLICATE
+What is a binary tree?,What is a binary search tree?,RELATED
+Explain the OSI model.,Explain the Transport layer of the OSI model.,RELATED
+What is a stack?,What is a queue?,RELATED
+Write a Python script to sort an array.,Write a Java program to sort an array.,RELATED
+What is Normalization?,Explain 3rd Normal Form (3NF).,RELATED
+Describe Quick Sort.,Describe Merge Sort.,RELATED
+What is Agile methodology?,What is Scrum methodology?,RELATED
+Explain symmetric encryption.,Explain asymmetric encryption.,RELATED
+What is a binary tree?,Describe the Agile methodology.,UNRELATED
+Explain TCP.,What is a database transaction?,UNRELATED
+Write a Python program to add two numbers.,Explain the role of an Operating System.,UNRELATED
+What is polymorphism?,How do you configure a VLAN?,UNRELATED
+Describe a linked list.,What is a deadlock in OS?,UNRELATED
+Could you explain a binary tree? [v2],Could you explain a binary tree? [v2],EXACT_DUPLICATE
+Define normalization in DBMS. [v2],Define normalization in DBMS. [v2],EXACT_DUPLICATE
+Could you explain the OSI model? [v2],Could you explain the OSI model? [v2],EXACT_DUPLICATE
+What kind of hierarchical structure is known as a binary tree? [v2],Define the characteristics of a binary tree data structure. [v2],SEMANTIC_DUPLICATE
+Describe the 1st Normal Form in database management. [v2],What are the requirements for a table to be in 1NF? [v2],SEMANTIC_DUPLICATE
+How does a router work? [v2],Define the primary function of a network router. [v2],SEMANTIC_DUPLICATE
+Could you explain the time complexity of bubble sort? [v2],How fast does bubble sort execute in Big O notation? [v2],SEMANTIC_DUPLICATE
+Define Polymorphism. [v2],What does polymorphism mean in Object Oriented Programming? [v2],SEMANTIC_DUPLICATE
+How does a stack work? [v2],Define the LIFO principle of a stack. [v2],SEMANTIC_DUPLICATE
+Compare TCP and UDP. [v2],What are the main differences between TCP and UDP protocols? [v2],SEMANTIC_DUPLICATE
+Could you explain a binary tree? [v2],Could you explain a binary search tree? [v2],RELATED
+Define the OSI model. [v2],Define the Transport layer of the OSI model. [v2],RELATED
+Could you explain a stack? [v2],Could you explain a queue? [v2],RELATED
+Write a Python script to sort an array. [v2],Write a Java program to sort an array. [v2],RELATED
+Could you explain Normalization? [v2],Define 3rd Normal Form (3NF). [v2],RELATED
+Describe Quick Sort. [v2],Describe Merge Sort. [v2],RELATED
+Could you explain Agile methodology? [v2],Could you explain Scrum methodology? [v2],RELATED
+Define symmetric encryption. [v2],Define asymmetric encryption. [v2],RELATED
+Could you explain a binary tree? [v2],Describe the Agile methodology. [v2],UNRELATED
+Define TCP. [v2],Could you explain a database transaction? [v2],UNRELATED
+Write a Python program to add two numbers. [v2],Define the role of an Operating System. [v2],UNRELATED
+Could you explain polymorphism? [v2],How do you configure a VLAN? [v2],UNRELATED
+Describe a linked list. [v2],Could you explain a deadlock in OS? [v2],UNRELATED
+Could you explain a binary tree? [v3],Could you explain a binary tree? [v3],EXACT_DUPLICATE
+Define normalization in DBMS. [v3],Define normalization in DBMS. [v3],EXACT_DUPLICATE
+Could you explain the OSI model? [v3],Could you explain the OSI model? [v3],EXACT_DUPLICATE
+What kind of hierarchical structure is known as a binary tree? [v3],Define the characteristics of a binary tree data structure. [v3],SEMANTIC_DUPLICATE
+Describe the 1st Normal Form in database management. [v3],What are the requirements for a table to be in 1NF? [v3],SEMANTIC_DUPLICATE
+How does a router work? [v3],Define the primary function of a network router. [v3],SEMANTIC_DUPLICATE
+Could you explain the time complexity of bubble sort? [v3],How fast does bubble sort execute in Big O notation? [v3],SEMANTIC_DUPLICATE
+Define Polymorphism. [v3],What does polymorphism mean in Object Oriented Programming? [v3],SEMANTIC_DUPLICATE
+How does a stack work? [v3],Define the LIFO principle of a stack. [v3],SEMANTIC_DUPLICATE
+Compare TCP and UDP. [v3],What are the main differences between TCP and UDP protocols? [v3],SEMANTIC_DUPLICATE
+Could you explain a binary tree? [v3],Could you explain a binary search tree? [v3],RELATED
+Define the OSI model. [v3],Define the Transport layer of the OSI model. [v3],RELATED
+Could you explain a stack? [v3],Could you explain a queue? [v3],RELATED
+Write a Python script to sort an array. [v3],Write a Java program to sort an array. [v3],RELATED
+Could you explain Normalization? [v3],Define 3rd Normal Form (3NF). [v3],RELATED
+Describe Quick Sort. [v3],Describe Merge Sort. [v3],RELATED
+Could you explain Agile methodology? [v3],Could you explain Scrum methodology? [v3],RELATED
+Define symmetric encryption. [v3],Define asymmetric encryption. [v3],RELATED
+Could you explain a binary tree? [v3],Describe the Agile methodology. [v3],UNRELATED
+Define TCP. [v3],Could you explain a database transaction? [v3],UNRELATED
+Write a Python program to add two numbers. [v3],Define the role of an Operating System. [v3],UNRELATED
+Could you explain polymorphism? [v3],How do you configure a VLAN? [v3],UNRELATED
+Describe a linked list. [v3],Could you explain a deadlock in OS? [v3],UNRELATED

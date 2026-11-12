@@ -1,0 +1,26 @@
+:root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #eef3f8;
+    --bg-gradient-end: #d4dfed;
+
+    --surface: #ffffff;
+    --surface-secondary: #f5f8fc;
+
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-inverse: #ffffff;
+
+    --border: #cbd5e1;
+
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+
+    --success: #16a34a;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --info: #0284c7;
+    
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+

@@ -1,0 +1,11 @@
+
+{
+  "name": "ai-project-root",
+  "version": "1.0.0",
+  "description": "Root script to start both frontend and backend concurrently.",
+  "scripts": {
+    "start": "npx concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && .\\.venv\\Scripts\\python.exe app.py",
+    "start:frontend": "cd frontend && npm run dev"
+  }
+}

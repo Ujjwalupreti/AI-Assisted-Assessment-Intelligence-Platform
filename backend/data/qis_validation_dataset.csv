@@ -1,0 +1,211 @@
+question,subject,topic,expected_bloom,expected_difficulty,expected_question_type,duplicate_group
+What is normalization in DBMS?,DBMS,Normalization,Remember,Easy,MCQ,none
+Define an operating system.,Operating Systems,Concepts,Remember,Easy,SUBJECTIVE,none
+Which OSI layer handles routing?,Computer Networks,OSI Model,Remember,Medium,MCQ,none
+State the time complexity of binary search.,Algorithms,Searching,Remember,Easy,MCQ,none
+What is the primary function of a router?,Computer Networks,Routing,Remember,Easy,MCQ,none
+Explain the difference between TCP and UDP.,Computer Networks,TCP/IP,Understand,Medium,SUBJECTIVE,group_tcp
+Describe how a hash table resolves collisions.,Data Structures,Hashing,Understand,Medium,SUBJECTIVE,none
+Summarize the Agile methodology.,Software Engineering,Agile,Understand,Easy,SUBJECTIVE,none
+How does a virtual memory system work?,Operating Systems,Memory Management,Understand,Hard,SUBJECTIVE,none
+Explain the concept of encapsulation in OOP.,Programming Fundamentals,OOP,Understand,Medium,SUBJECTIVE,none
+Apply Dijkstra's algorithm to find the shortest path.,Algorithms,Graph Algorithms,Apply,Medium,SHORT_ANSWER,group_12
+"Given an array [5, 2, 9, 1, 5], trace the steps of Bubble Sort.",Algorithms,Sorting,Apply,Medium,SUBJECTIVE,none
+Write a SQL query to find the second highest salary.,DBMS,SQL,Apply,Hard,SUBJECTIVE,none
+Use a stack to evaluate the postfix expression '2 3 +'.,Data Structures,Stack,Apply,Medium,SUBJECTIVE,none
+Configure a basic IP routing table for the given subnet.,Computer Networks,Routing,Apply,Hard,SUBJECTIVE,none
+Analyze the time complexity of this nested recursive algorithm.,Algorithms,Complexity,Analyze,Hard,SUBJECTIVE,none
+Compare the performance of quicksort and mergesort on nearly sorted data.,Algorithms,Sorting,Analyze,Hard,SUBJECTIVE,none
+Identify the security vulnerabilities in the provided Python code.,Software Engineering,Security,Analyze,Hard,SUBJECTIVE,none
+Determine why the given deadlock prevention strategy failed.,Operating Systems,Concurrency,Analyze,Hard,SUBJECTIVE,none
+Break down the components of the MVC architecture.,Software Engineering,Architecture,Analyze,Medium,SUBJECTIVE,none
+Evaluate the effectiveness of using NoSQL vs Relational DB for a highly scalable social network.,DBMS,NoSQL,Evaluate,Hard,SUBJECTIVE,none
+Critique the proposed network topology for a multi-campus university.,Computer Networks,Architecture,Evaluate,Hard,SUBJECTIVE,none
+Assess the pros and cons of microservices over monolithic architecture.,Software Engineering,Architecture,Evaluate,Medium,SUBJECTIVE,none
+Judge whether optimistic or pessimistic concurrency control is better for this e-commerce scenario.,DBMS,Transactions,Evaluate,Hard,SUBJECTIVE,none
+Defend the choice of using Python over C++ for a rapid prototyping AI project.,Programming Fundamentals,Concepts,Evaluate,Medium,SUBJECTIVE,none
+Design a normalized database schema for a library management system.,DBMS,Normalization,Create,Hard,SUBJECTIVE,none
+Write a complete Python script that scrapes a website and stores data in SQLite.,Python,Web Scraping,Create,Hard,SUBJECTIVE,none
+Develop a custom hashing algorithm optimized for short strings.,Data Structures,Hashing,Create,Hard,SUBJECTIVE,none
+Propose a new scheduling algorithm that minimizes turnaround time for I/O bound processes.,Operating Systems,Processes,Create,Hard,SUBJECTIVE,none
+Construct a project plan for migrating a legacy on-premise application to the cloud.,Software Engineering,Architecture,Create,Medium,SUBJECTIVE,none
+What is normalization in DBMS? (Variation 2),DBMS,Normalization,Remember,Easy,MCQ,none
+Define an operating system. (Variation 2),Operating Systems,Concepts,Remember,Easy,SUBJECTIVE,none
+Which OSI layer handles routing? (Variation 2),Computer Networks,OSI Model,Remember,Medium,MCQ,none
+State the time complexity of binary search. (Variation 2),Algorithms,Searching,Remember,Easy,MCQ,none
+What is the primary function of a router? (Variation 2),Computer Networks,Routing,Remember,Easy,MCQ,none
+Explain the difference between TCP and UDP. (Variation 2),Computer Networks,TCP/IP,Understand,Medium,SUBJECTIVE,group_tcp_var
+Describe how a hash table resolves collisions. (Variation 2),Data Structures,Hashing,Understand,Medium,SUBJECTIVE,none
+Summarize the Agile methodology. (Variation 2),Software Engineering,Agile,Understand,Easy,SUBJECTIVE,none
+How does a virtual memory system work? (Variation 2),Operating Systems,Memory Management,Understand,Hard,SUBJECTIVE,none
+Explain the concept of encapsulation in OOP. (Variation 2),Programming Fundamentals,OOP,Understand,Medium,SUBJECTIVE,none
+Apply Dijkstra's algorithm to find the shortest path. (Variation 2),Algorithms,Graph Algorithms,Apply,Medium,SHORT_ANSWER,group_12_var
+"Given an array [5, 2, 9, 1, 5], trace the steps of Bubble Sort. (Variation 2)",Algorithms,Sorting,Apply,Medium,SUBJECTIVE,none
+Write a SQL query to find the second highest salary. (Variation 2),DBMS,SQL,Apply,Hard,SUBJECTIVE,none
+Use a stack to evaluate the postfix expression '2 3 +'. (Variation 2),Data Structures,Stack,Apply,Medium,SUBJECTIVE,none
+Configure a basic IP routing table for the given subnet. (Variation 2),Computer Networks,Routing,Apply,Hard,SUBJECTIVE,none
+Analyze the time complexity of this nested recursive algorithm. (Variation 2),Algorithms,Complexity,Analyze,Hard,SUBJECTIVE,none
+Compare the performance of quicksort and mergesort on nearly sorted data. (Variation 2),Algorithms,Sorting,Analyze,Hard,SUBJECTIVE,none
+Identify the security vulnerabilities in the provided Python code. (Variation 2),Software Engineering,Security,Analyze,Hard,SUBJECTIVE,none
+Determine why the given deadlock prevention strategy failed. (Variation 2),Operating Systems,Concurrency,Analyze,Hard,SUBJECTIVE,none
+Break down the components of the MVC architecture. (Variation 2),Software Engineering,Architecture,Analyze,Medium,SUBJECTIVE,none
+Evaluate the effectiveness of using NoSQL vs Relational DB for a highly scalable social network. (Variation 2),DBMS,NoSQL,Evaluate,Hard,SUBJECTIVE,none
+Critique the proposed network topology for a multi-campus university. (Variation 2),Computer Networks,Architecture,Evaluate,Hard,SUBJECTIVE,none
+Assess the pros and cons of microservices over monolithic architecture. (Variation 2),Software Engineering,Architecture,Evaluate,Medium,SUBJECTIVE,none
+Judge whether optimistic or pessimistic concurrency control is better for this e-commerce scenario. (Variation 2),DBMS,Transactions,Evaluate,Hard,SUBJECTIVE,none
+Defend the choice of using Python over C++ for a rapid prototyping AI project. (Variation 2),Programming Fundamentals,Concepts,Evaluate,Medium,SUBJECTIVE,none
+Design a normalized database schema for a library management system. (Variation 2),DBMS,Normalization,Create,Hard,SUBJECTIVE,none
+Write a complete Python script that scrapes a website and stores data in SQLite. (Variation 2),Python,Web Scraping,Create,Hard,SUBJECTIVE,none
+Develop a custom hashing algorithm optimized for short strings. (Variation 2),Data Structures,Hashing,Create,Hard,SUBJECTIVE,none
+Propose a new scheduling algorithm that minimizes turnaround time for I/O bound processes. (Variation 2),Operating Systems,Processes,Create,Hard,SUBJECTIVE,none
+Construct a project plan for migrating a legacy on-premise application to the cloud. (Variation 2),Software Engineering,Architecture,Create,Medium,SUBJECTIVE,none
+What is normalization in DBMS? (Variation 3),DBMS,Normalization,Remember,Easy,MCQ,none
+Define an operating system. (Variation 3),Operating Systems,Concepts,Remember,Easy,SUBJECTIVE,none
+Which OSI layer handles routing? (Variation 3),Computer Networks,OSI Model,Remember,Medium,MCQ,none
+State the time complexity of binary search. (Variation 3),Algorithms,Searching,Remember,Easy,MCQ,none
+What is the primary function of a router? (Variation 3),Computer Networks,Routing,Remember,Easy,MCQ,none
+Explain the difference between TCP and UDP. (Variation 3),Computer Networks,TCP/IP,Understand,Medium,SUBJECTIVE,group_tcp_var
+Describe how a hash table resolves collisions. (Variation 3),Data Structures,Hashing,Understand,Medium,SUBJECTIVE,none
+Summarize the Agile methodology. (Variation 3),Software Engineering,Agile,Understand,Easy,SUBJECTIVE,none
+How does a virtual memory system work? (Variation 3),Operating Systems,Memory Management,Understand,Hard,SUBJECTIVE,none
+Explain the concept of encapsulation in OOP. (Variation 3),Programming Fundamentals,OOP,Understand,Medium,SUBJECTIVE,none
+Apply Dijkstra's algorithm to find the shortest path. (Variation 3),Algorithms,Graph Algorithms,Apply,Medium,SHORT_ANSWER,group_12_var
+"Given an array [5, 2, 9, 1, 5], trace the steps of Bubble Sort. (Variation 3)",Algorithms,Sorting,Apply,Medium,SUBJECTIVE,none
+Write a SQL query to find the second highest salary. (Variation 3),DBMS,SQL,Apply,Hard,SUBJECTIVE,none
+Use a stack to evaluate the postfix expression '2 3 +'. (Variation 3),Data Structures,Stack,Apply,Medium,SUBJECTIVE,none
+Configure a basic IP routing table for the given subnet. (Variation 3),Computer Networks,Routing,Apply,Hard,SUBJECTIVE,none
+Analyze the time complexity of this nested recursive algorithm. (Variation 3),Algorithms,Complexity,Analyze,Hard,SUBJECTIVE,none
+Compare the performance of quicksort and mergesort on nearly sorted data. (Variation 3),Algorithms,Sorting,Analyze,Hard,SUBJECTIVE,none
+Identify the security vulnerabilities in the provided Python code. (Variation 3),Software Engineering,Security,Analyze,Hard,SUBJECTIVE,none
+Determine why the given deadlock prevention strategy failed. (Variation 3),Operating Systems,Concurrency,Analyze,Hard,SUBJECTIVE,none
+Break down the components of the MVC architecture. (Variation 3),Software Engineering,Architecture,Analyze,Medium,SUBJECTIVE,none
+Evaluate the effectiveness of using NoSQL vs Relational DB for a highly scalable social network. (Variation 3),DBMS,NoSQL,Evaluate,Hard,SUBJECTIVE,none
+Critique the proposed network topology for a multi-campus university. (Variation 3),Computer Networks,Architecture,Evaluate,Hard,SUBJECTIVE,none
+Assess the pros and cons of microservices over monolithic architecture. (Variation 3),Software Engineering,Architecture,Evaluate,Medium,SUBJECTIVE,none
+Judge whether optimistic or pessimistic concurrency control is better for this e-commerce scenario. (Variation 3),DBMS,Transactions,Evaluate,Hard,SUBJECTIVE,none
+Defend the choice of using Python over C++ for a rapid prototyping AI project. (Variation 3),Programming Fundamentals,Concepts,Evaluate,Medium,SUBJECTIVE,none
+Design a normalized database schema for a library management system. (Variation 3),DBMS,Normalization,Create,Hard,SUBJECTIVE,none
+Write a complete Python script that scrapes a website and stores data in SQLite. (Variation 3),Python,Web Scraping,Create,Hard,SUBJECTIVE,none
+Develop a custom hashing algorithm optimized for short strings. (Variation 3),Data Structures,Hashing,Create,Hard,SUBJECTIVE,none
+Propose a new scheduling algorithm that minimizes turnaround time for I/O bound processes. (Variation 3),Operating Systems,Processes,Create,Hard,SUBJECTIVE,none
+Construct a project plan for migrating a legacy on-premise application to the cloud. (Variation 3),Software Engineering,Architecture,Create,Medium,SUBJECTIVE,none
+What is normalization in DBMS? (Variation 4),DBMS,Normalization,Remember,Easy,MCQ,none
+Define an operating system. (Variation 4),Operating Systems,Concepts,Remember,Easy,SUBJECTIVE,none
+Which OSI layer handles routing? (Variation 4),Computer Networks,OSI Model,Remember,Medium,MCQ,none
+State the time complexity of binary search. (Variation 4),Algorithms,Searching,Remember,Easy,MCQ,none
+What is the primary function of a router? (Variation 4),Computer Networks,Routing,Remember,Easy,MCQ,none
+Explain the difference between TCP and UDP. (Variation 4),Computer Networks,TCP/IP,Understand,Medium,SUBJECTIVE,group_tcp_var
+Describe how a hash table resolves collisions. (Variation 4),Data Structures,Hashing,Understand,Medium,SUBJECTIVE,none
+Summarize the Agile methodology. (Variation 4),Software Engineering,Agile,Understand,Easy,SUBJECTIVE,none
+How does a virtual memory system work? (Variation 4),Operating Systems,Memory Management,Understand,Hard,SUBJECTIVE,none
+Explain the concept of encapsulation in OOP. (Variation 4),Programming Fundamentals,OOP,Understand,Medium,SUBJECTIVE,none
+Apply Dijkstra's algorithm to find the shortest path. (Variation 4),Algorithms,Graph Algorithms,Apply,Medium,SHORT_ANSWER,group_12_var
+"Given an array [5, 2, 9, 1, 5], trace the steps of Bubble Sort. (Variation 4)",Algorithms,Sorting,Apply,Medium,SUBJECTIVE,none
+Write a SQL query to find the second highest salary. (Variation 4),DBMS,SQL,Apply,Hard,SUBJECTIVE,none
+Use a stack to evaluate the postfix expression '2 3 +'. (Variation 4),Data Structures,Stack,Apply,Medium,SUBJECTIVE,none
+Configure a basic IP routing table for the given subnet. (Variation 4),Computer Networks,Routing,Apply,Hard,SUBJECTIVE,none
+Analyze the time complexity of this nested recursive algorithm. (Variation 4),Algorithms,Complexity,Analyze,Hard,SUBJECTIVE,none
+Compare the performance of quicksort and mergesort on nearly sorted data. (Variation 4),Algorithms,Sorting,Analyze,Hard,SUBJECTIVE,none
+Identify the security vulnerabilities in the provided Python code. (Variation 4),Software Engineering,Security,Analyze,Hard,SUBJECTIVE,none
+Determine why the given deadlock prevention strategy failed. (Variation 4),Operating Systems,Concurrency,Analyze,Hard,SUBJECTIVE,none
+Break down the components of the MVC architecture. (Variation 4),Software Engineering,Architecture,Analyze,Medium,SUBJECTIVE,none
+Evaluate the effectiveness of using NoSQL vs Relational DB for a highly scalable social network. (Variation 4),DBMS,NoSQL,Evaluate,Hard,SUBJECTIVE,none
+Critique the proposed network topology for a multi-campus university. (Variation 4),Computer Networks,Architecture,Evaluate,Hard,SUBJECTIVE,none
+Assess the pros and cons of microservices over monolithic architecture. (Variation 4),Software Engineering,Architecture,Evaluate,Medium,SUBJECTIVE,none
+Judge whether optimistic or pessimistic concurrency control is better for this e-commerce scenario. (Variation 4),DBMS,Transactions,Evaluate,Hard,SUBJECTIVE,none
+Defend the choice of using Python over C++ for a rapid prototyping AI project. (Variation 4),Programming Fundamentals,Concepts,Evaluate,Medium,SUBJECTIVE,none
+Design a normalized database schema for a library management system. (Variation 4),DBMS,Normalization,Create,Hard,SUBJECTIVE,none
+Write a complete Python script that scrapes a website and stores data in SQLite. (Variation 4),Python,Web Scraping,Create,Hard,SUBJECTIVE,none
+Develop a custom hashing algorithm optimized for short strings. (Variation 4),Data Structures,Hashing,Create,Hard,SUBJECTIVE,none
+Propose a new scheduling algorithm that minimizes turnaround time for I/O bound processes. (Variation 4),Operating Systems,Processes,Create,Hard,SUBJECTIVE,none
+Construct a project plan for migrating a legacy on-premise application to the cloud. (Variation 4),Software Engineering,Architecture,Create,Medium,SUBJECTIVE,none
+What is normalization in DBMS? (Variation 5),DBMS,Normalization,Remember,Easy,MCQ,none
+Define an operating system. (Variation 5),Operating Systems,Concepts,Remember,Easy,SUBJECTIVE,none
+Which OSI layer handles routing? (Variation 5),Computer Networks,OSI Model,Remember,Medium,MCQ,none
+State the time complexity of binary search. (Variation 5),Algorithms,Searching,Remember,Easy,MCQ,none
+What is the primary function of a router? (Variation 5),Computer Networks,Routing,Remember,Easy,MCQ,none
+Explain the difference between TCP and UDP. (Variation 5),Computer Networks,TCP/IP,Understand,Medium,SUBJECTIVE,group_tcp_var
+Describe how a hash table resolves collisions. (Variation 5),Data Structures,Hashing,Understand,Medium,SUBJECTIVE,none
+Summarize the Agile methodology. (Variation 5),Software Engineering,Agile,Understand,Easy,SUBJECTIVE,none
+How does a virtual memory system work? (Variation 5),Operating Systems,Memory Management,Understand,Hard,SUBJECTIVE,none
+Explain the concept of encapsulation in OOP. (Variation 5),Programming Fundamentals,OOP,Understand,Medium,SUBJECTIVE,none
+Apply Dijkstra's algorithm to find the shortest path. (Variation 5),Algorithms,Graph Algorithms,Apply,Medium,SHORT_ANSWER,group_12_var
+"Given an array [5, 2, 9, 1, 5], trace the steps of Bubble Sort. (Variation 5)",Algorithms,Sorting,Apply,Medium,SUBJECTIVE,none
+Write a SQL query to find the second highest salary. (Variation 5),DBMS,SQL,Apply,Hard,SUBJECTIVE,none
+Use a stack to evaluate the postfix expression '2 3 +'. (Variation 5),Data Structures,Stack,Apply,Medium,SUBJECTIVE,none
+Configure a basic IP routing table for the given subnet. (Variation 5),Computer Networks,Routing,Apply,Hard,SUBJECTIVE,none
+Analyze the time complexity of this nested recursive algorithm. (Variation 5),Algorithms,Complexity,Analyze,Hard,SUBJECTIVE,none
+Compare the performance of quicksort and mergesort on nearly sorted data. (Variation 5),Algorithms,Sorting,Analyze,Hard,SUBJECTIVE,none
+Identify the security vulnerabilities in the provided Python code. (Variation 5),Software Engineering,Security,Analyze,Hard,SUBJECTIVE,none
+Determine why the given deadlock prevention strategy failed. (Variation 5),Operating Systems,Concurrency,Analyze,Hard,SUBJECTIVE,none
+Break down the components of the MVC architecture. (Variation 5),Software Engineering,Architecture,Analyze,Medium,SUBJECTIVE,none
+Evaluate the effectiveness of using NoSQL vs Relational DB for a highly scalable social network. (Variation 5),DBMS,NoSQL,Evaluate,Hard,SUBJECTIVE,none
+Critique the proposed network topology for a multi-campus university. (Variation 5),Computer Networks,Architecture,Evaluate,Hard,SUBJECTIVE,none
+Assess the pros and cons of microservices over monolithic architecture. (Variation 5),Software Engineering,Architecture,Evaluate,Medium,SUBJECTIVE,none
+Judge whether optimistic or pessimistic concurrency control is better for this e-commerce scenario. (Variation 5),DBMS,Transactions,Evaluate,Hard,SUBJECTIVE,none
+Defend the choice of using Python over C++ for a rapid prototyping AI project. (Variation 5),Programming Fundamentals,Concepts,Evaluate,Medium,SUBJECTIVE,none
+Design a normalized database schema for a library management system. (Variation 5),DBMS,Normalization,Create,Hard,SUBJECTIVE,none
+Write a complete Python script that scrapes a website and stores data in SQLite. (Variation 5),Python,Web Scraping,Create,Hard,SUBJECTIVE,none
+Develop a custom hashing algorithm optimized for short strings. (Variation 5),Data Structures,Hashing,Create,Hard,SUBJECTIVE,none
+Propose a new scheduling algorithm that minimizes turnaround time for I/O bound processes. (Variation 5),Operating Systems,Processes,Create,Hard,SUBJECTIVE,none
+Construct a project plan for migrating a legacy on-premise application to the cloud. (Variation 5),Software Engineering,Architecture,Create,Medium,SUBJECTIVE,none
+What is normalization in DBMS? (Variation 6),DBMS,Normalization,Remember,Easy,MCQ,none
+Define an operating system. (Variation 6),Operating Systems,Concepts,Remember,Easy,SUBJECTIVE,none
+Which OSI layer handles routing? (Variation 6),Computer Networks,OSI Model,Remember,Medium,MCQ,none
+State the time complexity of binary search. (Variation 6),Algorithms,Searching,Remember,Easy,MCQ,none
+What is the primary function of a router? (Variation 6),Computer Networks,Routing,Remember,Easy,MCQ,none
+Explain the difference between TCP and UDP. (Variation 6),Computer Networks,TCP/IP,Understand,Medium,SUBJECTIVE,group_tcp_var
+Describe how a hash table resolves collisions. (Variation 6),Data Structures,Hashing,Understand,Medium,SUBJECTIVE,none
+Summarize the Agile methodology. (Variation 6),Software Engineering,Agile,Understand,Easy,SUBJECTIVE,none
+How does a virtual memory system work? (Variation 6),Operating Systems,Memory Management,Understand,Hard,SUBJECTIVE,none
+Explain the concept of encapsulation in OOP. (Variation 6),Programming Fundamentals,OOP,Understand,Medium,SUBJECTIVE,none
+Apply Dijkstra's algorithm to find the shortest path. (Variation 6),Algorithms,Graph Algorithms,Apply,Medium,SHORT_ANSWER,group_12_var
+"Given an array [5, 2, 9, 1, 5], trace the steps of Bubble Sort. (Variation 6)",Algorithms,Sorting,Apply,Medium,SUBJECTIVE,none
+Write a SQL query to find the second highest salary. (Variation 6),DBMS,SQL,Apply,Hard,SUBJECTIVE,none
+Use a stack to evaluate the postfix expression '2 3 +'. (Variation 6),Data Structures,Stack,Apply,Medium,SUBJECTIVE,none
+Configure a basic IP routing table for the given subnet. (Variation 6),Computer Networks,Routing,Apply,Hard,SUBJECTIVE,none
+Analyze the time complexity of this nested recursive algorithm. (Variation 6),Algorithms,Complexity,Analyze,Hard,SUBJECTIVE,none
+Compare the performance of quicksort and mergesort on nearly sorted data. (Variation 6),Algorithms,Sorting,Analyze,Hard,SUBJECTIVE,none
+Identify the security vulnerabilities in the provided Python code. (Variation 6),Software Engineering,Security,Analyze,Hard,SUBJECTIVE,none
+Determine why the given deadlock prevention strategy failed. (Variation 6),Operating Systems,Concurrency,Analyze,Hard,SUBJECTIVE,none
+Break down the components of the MVC architecture. (Variation 6),Software Engineering,Architecture,Analyze,Medium,SUBJECTIVE,none
+Evaluate the effectiveness of using NoSQL vs Relational DB for a highly scalable social network. (Variation 6),DBMS,NoSQL,Evaluate,Hard,SUBJECTIVE,none
+Critique the proposed network topology for a multi-campus university. (Variation 6),Computer Networks,Architecture,Evaluate,Hard,SUBJECTIVE,none
+Assess the pros and cons of microservices over monolithic architecture. (Variation 6),Software Engineering,Architecture,Evaluate,Medium,SUBJECTIVE,none
+Judge whether optimistic or pessimistic concurrency control is better for this e-commerce scenario. (Variation 6),DBMS,Transactions,Evaluate,Hard,SUBJECTIVE,none
+Defend the choice of using Python over C++ for a rapid prototyping AI project. (Variation 6),Programming Fundamentals,Concepts,Evaluate,Medium,SUBJECTIVE,none
+Design a normalized database schema for a library management system. (Variation 6),DBMS,Normalization,Create,Hard,SUBJECTIVE,none
+Write a complete Python script that scrapes a website and stores data in SQLite. (Variation 6),Python,Web Scraping,Create,Hard,SUBJECTIVE,none
+Develop a custom hashing algorithm optimized for short strings. (Variation 6),Data Structures,Hashing,Create,Hard,SUBJECTIVE,none
+Propose a new scheduling algorithm that minimizes turnaround time for I/O bound processes. (Variation 6),Operating Systems,Processes,Create,Hard,SUBJECTIVE,none
+Construct a project plan for migrating a legacy on-premise application to the cloud. (Variation 6),Software Engineering,Architecture,Create,Medium,SUBJECTIVE,none
+What is normalization in DBMS? (Variation 7),DBMS,Normalization,Remember,Easy,MCQ,none
+Define an operating system. (Variation 7),Operating Systems,Concepts,Remember,Easy,SUBJECTIVE,none
+Which OSI layer handles routing? (Variation 7),Computer Networks,OSI Model,Remember,Medium,MCQ,none
+State the time complexity of binary search. (Variation 7),Algorithms,Searching,Remember,Easy,MCQ,none
+What is the primary function of a router? (Variation 7),Computer Networks,Routing,Remember,Easy,MCQ,none
+Explain the difference between TCP and UDP. (Variation 7),Computer Networks,TCP/IP,Understand,Medium,SUBJECTIVE,group_tcp_var
+Describe how a hash table resolves collisions. (Variation 7),Data Structures,Hashing,Understand,Medium,SUBJECTIVE,none
+Summarize the Agile methodology. (Variation 7),Software Engineering,Agile,Understand,Easy,SUBJECTIVE,none
+How does a virtual memory system work? (Variation 7),Operating Systems,Memory Management,Understand,Hard,SUBJECTIVE,none
+Explain the concept of encapsulation in OOP. (Variation 7),Programming Fundamentals,OOP,Understand,Medium,SUBJECTIVE,none
+Apply Dijkstra's algorithm to find the shortest path. (Variation 7),Algorithms,Graph Algorithms,Apply,Medium,SHORT_ANSWER,group_12_var
+"Given an array [5, 2, 9, 1, 5], trace the steps of Bubble Sort. (Variation 7)",Algorithms,Sorting,Apply,Medium,SUBJECTIVE,none
+Write a SQL query to find the second highest salary. (Variation 7),DBMS,SQL,Apply,Hard,SUBJECTIVE,none
+Use a stack to evaluate the postfix expression '2 3 +'. (Variation 7),Data Structures,Stack,Apply,Medium,SUBJECTIVE,none
+Configure a basic IP routing table for the given subnet. (Variation 7),Computer Networks,Routing,Apply,Hard,SUBJECTIVE,none
+Analyze the time complexity of this nested recursive algorithm. (Variation 7),Algorithms,Complexity,Analyze,Hard,SUBJECTIVE,none
+Compare the performance of quicksort and mergesort on nearly sorted data. (Variation 7),Algorithms,Sorting,Analyze,Hard,SUBJECTIVE,none
+Identify the security vulnerabilities in the provided Python code. (Variation 7),Software Engineering,Security,Analyze,Hard,SUBJECTIVE,none
+Determine why the given deadlock prevention strategy failed. (Variation 7),Operating Systems,Concurrency,Analyze,Hard,SUBJECTIVE,none
+Break down the components of the MVC architecture. (Variation 7),Software Engineering,Architecture,Analyze,Medium,SUBJECTIVE,none
+Evaluate the effectiveness of using NoSQL vs Relational DB for a highly scalable social network. (Variation 7),DBMS,NoSQL,Evaluate,Hard,SUBJECTIVE,none
+Critique the proposed network topology for a multi-campus university. (Variation 7),Computer Networks,Architecture,Evaluate,Hard,SUBJECTIVE,none
+Assess the pros and cons of microservices over monolithic architecture. (Variation 7),Software Engineering,Architecture,Evaluate,Medium,SUBJECTIVE,none
+Judge whether optimistic or pessimistic concurrency control is better for this e-commerce scenario. (Variation 7),DBMS,Transactions,Evaluate,Hard,SUBJECTIVE,none
+Defend the choice of using Python over C++ for a rapid prototyping AI project. (Variation 7),Programming Fundamentals,Concepts,Evaluate,Medium,SUBJECTIVE,none
+Design a normalized database schema for a library management system. (Variation 7),DBMS,Normalization,Create,Hard,SUBJECTIVE,none
+Write a complete Python script that scrapes a website and stores data in SQLite. (Variation 7),Python,Web Scraping,Create,Hard,SUBJECTIVE,none
+Develop a custom hashing algorithm optimized for short strings. (Variation 7),Data Structures,Hashing,Create,Hard,SUBJECTIVE,none
+Propose a new scheduling algorithm that minimizes turnaround time for I/O bound processes. (Variation 7),Operating Systems,Processes,Create,Hard,SUBJECTIVE,none
+Construct a project plan for migrating a legacy on-premise application to the cloud. (Variation 7),Software Engineering,Architecture,Create,Medium,SUBJECTIVE,none

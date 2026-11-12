@@ -1,0 +1,131 @@
+{
+    "qis_analysis_accuracy": {
+        "status": "PASS",
+        "output": {
+            "status": "PARTIAL",
+            "analysis_status": "DEGRADED",
+            "warnings": [
+                "3/4 classifiers used heuristic fallback (LLM may be unavailable)"
+            ],
+            "errors": [],
+            "classification": {
+                "question_type": {
+                    "label": "MCQ",
+                    "confidence": 0.97,
+                    "method": "structural"
+                },
+                "topic": {
+                    "label": "General CS",
+                    "confidence": 0.15,
+                    "alternatives": [],
+                    "method": "heuristic_fallback"
+                },
+                "bloom": {
+                    "label": "Remember",
+                    "confidence": 0.3,
+                    "evidence": [
+                        "what is"
+                    ],
+                    "method": "heuristic_fallback"
+                },
+                "difficulty": {
+                    "label": "Easy",
+                    "confidence": 0.3,
+                    "reasoning_factors": [
+                        "Low-order Bloom level (Remember) suggests simplicity"
+                    ],
+                    "method": "heuristic_fallback"
+                }
+            },
+            "quality": {
+                "overall_score": 0.76,
+                "dimensions": {
+                    "clarity": 0.8,
+                    "completeness": 0.6,
+                    "specificity": 0.7,
+                    "grammar": 0.9,
+                    "ambiguity": 0.8
+                },
+                "status": "WARNING"
+            },
+            "validation": {
+                "valid": true,
+                "issues": []
+            },
+            "duplicate": {
+                "risk": 0.0,
+                "risk_label": "LOW",
+                "is_duplicate": false,
+                "similar_question_id": null,
+                "similarity": 0.0,
+                "similar_questions": [],
+                "method": "none"
+            },
+            "alignment": {
+                "topic": "MISMATCH",
+                "bloom": "MATCH",
+                "difficulty": "MATCH"
+            },
+            "recommendations": [
+                {
+                    "issue": "Question is short (6 words). Consider adding context.",
+                    "severity": "MEDIUM",
+                    "why": "Detected by deterministic quality rule: TOO_SHORT",
+                    "recommendation": "",
+                    "suggested_improvement": null
+                },
+                {
+                    "issue": "Consider adding more context to reduce ambiguity.",
+                    "severity": "LOW",
+                    "why": "Quality improvement suggestion",
+                    "recommendation": "Consider adding more context to reduce ambiguity.",
+                    "suggested_improvement": null
+                }
+            ],
+            "explanations": {
+                "topic": "Classified as 'General CS' (heuristic_fallback, confidence: 15%).",
+                "bloom": "Classified as 'Remember' (heuristic_fallback, confidence: 30%). Evidence: what is",
+                "difficulty": "Estimated as 'Easy' (heuristic_fallback, confidence: 30%). Factors: Low-order Bloom level (Remember) suggests simplicity",
+                "quality": "Quality status: WARNING. Score: 0.76."
+            },
+            "review": {
+                "required": true,
+                "reasons": [
+                    "Low topic confidence (15%)",
+                    "Low Bloom confidence (30%)",
+                    "LLM unavailable \u2014 analysis is degraded, manual review recommended"
+                ],
+                "priority": "HIGH"
+            },
+            "model_metadata": {
+                "model_name": "qis-ml-pipeline-v1",
+                "model_version": "3.0.0",
+                "embedding_model": "all-MiniLM-L6-v2",
+                "llm_model": "gemini-1.5-flash",
+                "analysis_version": "2026-08-v3",
+                "llm_status": "UNAVAILABLE"
+            }
+        },
+        "notes": "QIS successfully classified the question."
+    },
+    "recommendation_system": {
+        "status": "PASS",
+        "recommendation_count": 4,
+        "sample_recommendation": {
+            "action": "ADD",
+            "reason": "Short 3 Python question(s) in topic. Target: 3, Current: 0.",
+            "priority": "HIGH",
+            "gap": {
+                "topic": "Python"
+            },
+            "candidates": []
+        },
+        "notes": "Recommendations successfully generated based on blueprint."
+    },
+    "deduplication": {
+        "status": "FAIL",
+        "groups_found": 0,
+        "total_duplicates": 0,
+        "notes": "Failed to identify similar questions."
+    }
+}

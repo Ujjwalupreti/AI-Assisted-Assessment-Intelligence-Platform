@@ -1,0 +1,100 @@
+/* frontend/src/styles/StudentDashboard.css */
+
+/* Backgrounds */
+.page-bg {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    color: #2d3436;
+}
+
+.exam-bg {
+    background: #f8f9fa;
+}
+
+/* Cards */
+.glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+}
+
+.question-card {
+    border-radius: 16px;
+}
+
+/* Options */
+.option-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    transform: scale(1);
+}
+
+.option-card.selected {
+    background: #e3f2fd;
+    border: 2px solid #2196f3;
+    transform: scale(1.01);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);
+}
+
+.option-circle {
+    width: 32px;
+    height: 32px;
+    font-weight: bold;
+}
+
+.option-circle.unselected {
+    background: #f0f0f0;
+    color: #666;
+}
+
+.option-circle.selected {
+    background: #2196f3;
+    color: white;
+}
+
+/* Warning Overlay */
+.warning-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(220, 53, 69, 0.95);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+/* Layout Utilities */
+.question-container {
+    max-width: 850px;
+}
+
+.sidebar {
+    width: 340px;
+}
+
+/* Proctoring Video */
+.proctor-container {
+    width: 180px;
+    height: 135px;
+    background: #000;
+}
+
+.proctor-video {
+    object-fit: cover;
+    opacity: 0.9;
+    width: 100%;
+    height: 100%;
+}

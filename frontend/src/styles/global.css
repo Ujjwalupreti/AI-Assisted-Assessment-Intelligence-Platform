@@ -1,0 +1,51 @@
+/* src/styles/global.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+html, body, #root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg-primary);
+    background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary), var(--bg-gradient-end));
+    color: var(--text-primary);
+    background-attachment: fixed;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--accent-hover);
+}
+
+.page-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Reset Bootstrap overrides */
+.bg-light {
+    background-color: transparent !important;
+}
+.text-dark {
+    color: var(--text-primary) !important;
+}
+.text-muted {
+    color: var(--text-secondary) !important;
+}

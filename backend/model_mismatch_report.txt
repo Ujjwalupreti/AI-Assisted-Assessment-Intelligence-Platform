@@ -1,0 +1,35 @@
+--- Table user (User) ---
+  Missing in model: {'is_active'}
+--- Table exam (Exam) ---
+  Missing in model: {'password_hash', 'creation_mode'}
+  Extra in model: {'password'}
+--- Table question (Question) ---
+  Missing in model: {'subtopic', 'duplicate_status', 'source', 'question_type', 'is_archived', 'created_at', 'subject', 'status', 'created_by'}
+--- Table proctoring_event (ProctoringEvent) ---
+  Missing in model: {'bounding_box', 'frame_timestamp', 'confidence', 'model_name'}
+--- Table question_ai_analysis (QuestionAiAnalysis) ---
+  Missing in model: {'question_type', 'model_name', 'quality_status', 'quality_issues', 'duplicate_similarity', 'analysis_source', 'completeness_score', 'created_at', 'is_current', 'quality_suggestions', 'teacher_accepted_at', 'bloom_label', 'review_status', 'model_version', 'topic_label', 'updated_at', 'analysis_json', 'difficulty_confidence', 'difficulty_label', 'teacher_review_status', 'specificity_score', 'clarity_score', 'analysis_method', 'question_type_confidence', 'bloom_confidence', 'duplicate_risk', 'analysis_status', 'topic_confidence', 'teacher_override'}
+  Extra in model: {'suggestions', 'feedback'}
+--- Table exam_analysis (ExamAnalysis) ---
+  Missing in model: {'total_questions', 'duplicate_count', 'quality_score', 'created_at', 'bloom_distribution', 'status', 'blueprint_score'}
+  Extra in model: {'overall_quality'}
+--- Table ai_job (AIJob) ---
+  Missing in model: {'processed', 'failed', 'successful', 'total', 'created_at', 'completed_at', 'result_data', 'error_message', 'failed_question_ids'}
+  Extra in model: {'result'}
+--- Table duplicate_group (DuplicateGroup) ---
+  Missing in model: {'resolved_at', 'similarity_threshold', 'resolved_by'}
+--- Table question_duplicate (QuestionDuplicate) ---
+  Missing in model: {'status', 'is_primary'}
+  Extra in model: {'is_master'}
+--- Table course_document (CourseDocument) ---
+  Missing in model: {'title', 'created_by', 'content_text', 'course_name'}
+  Extra in model: {'uploaded_by', 'content', 'filename'}
+--- Table document_chunk (DocumentChunk) ---
+  Missing in model: {'chunk_index', 'model_name'}
+--- Table assessment_blueprint (AssessmentBlueprint) ---
+  Missing in model: {'created_by'}
+--- Table exam_slot (ExamSlot) ---
+  Missing in model: {'slot_number', 'total_marks', 'blueprint_match_score', 'topic_distribution', 'quality_score', 'difficulty_distribution', 'bloom_distribution'}
+  Extra in model: {'slot_name', 'metrics_json'}
+--- Table exam_slot_question (ExamSlotQuestion) ---
+  Missing in model: {'order'}
