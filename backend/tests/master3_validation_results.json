@@ -1,0 +1,110 @@
+{
+  "functional": {
+    "teacher_login": {
+      "status": "PASS",
+      "latency_ms": 733.33
+    },
+    "student_login": {
+      "status": "PASS"
+    },
+    "invalid_credentials_rejected": {
+      "status": "PASS"
+    },
+    "rag_ingest": {
+      "status": "PASS",
+      "chunks": 2,
+      "latency_ms": 43626.49
+    },
+    "create_exam": {
+      "status": "PASS",
+      "exam_id": 1
+    },
+    "exam_start": {
+      "status": "PASS",
+      "attempt_id": 1,
+      "latency_ms": 46.75
+    },
+    "proctoring_frame": {
+      "status": "PASS",
+      "vision_status": "missing",
+      "latency_ms": 961.44
+    },
+    "exam_submit": {
+      "status": "PASS",
+      "score": 4.0,
+      "latency_ms": 81.79
+    },
+    "teacher_override": {
+      "status": "PASS",
+      "final_marks": 4.5
+    },
+    "exam_analytics": {
+      "status": "PASS",
+      "avg_score": 8.5,
+      "attempts": 1
+    },
+    "student_analytics": {
+      "status": "PASS",
+      "exams_taken": 1
+    }
+  },
+  "ai_ml": {
+    "rag_retrieval": {
+      "status": "PASS",
+      "latency_ms": 60.16,
+      "relevant": true
+    },
+    "qis_classification": {
+      "status": "PASS",
+      "bloom": "Remember",
+      "difficulty": "Easy",
+      "question_type": "MCQ",
+      "latency_ms": 12596.13
+    },
+    "assessment_assembly": {
+      "status": "PASS",
+      "requested": 4,
+      "selected": 3,
+      "gaps": [
+        "Requested 4 questions but could only find 3.",
+        "Missing 1 'Medium' difficulty questions.",
+        "Missing 1 'Remember' level questions.",
+        "Missing 1 'Understand' level questions."
+      ],
+      "quota_honest_reporting": true
+    },
+    "subjective_evaluation": {
+      "status": "PASS",
+      "suggested_marks": 3.8,
+      "max_marks": 5.0,
+      "confidence": 0.83,
+      "model_name": "all-MiniLM-L6-v2-local",
+      "review_status": "COMPLETED"
+    }
+  },
+  "security": {
+    "role_separation_enforced": {
+      "status": "PASS"
+    },
+    "ciphertext_guard": {
+      "status": "PASS"
+    },
+    "path_traversal_protection": {
+      "status": "PASS"
+    },
+    "prompt_injection_resistance": {
+      "status": "PASS",
+      "marks_awarded": 0.0,
+      "max_marks": 5.0
+    }
+  },
+  "performance": {
+    "api_ping": {
+      "avg_ms": 3.1,
+      "p95_ms": 5.09,
+      "throughput_req_sec": 322.2
+    }
+  },
+  "recovery": {},
+  "e2e": {}
+}
