@@ -118,3 +118,91 @@ def exam_blueprint_analytics(exam_id: int, db: Session = Depends(get_db), teache
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analytics error: {str(e)}")
+
+
+# --- 3. EXAM PERFORMANCE ANALYTICS ---
+@analytics_bp.get('/exam/{exam_id}')
+def exam_summary_analytics(exam_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Aggregates class results, average scores, and score distribution for an exam."""
+    exam = db.get(Exam, exam_id)
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found")
+        
+    results = db.query(Result).filter_by(exam_id=exam_id).all()
+    if not results:
+        return {
+            "exam_id": exam_id,
+            "title": exam.title,
+            "total_attempts": 0,
+            "average_score": 0.0,
+            "highest_score": 0.0,
+            "lowest_score": 0.0,
+            "pass_count": 0,
+            "pass_rate_pct": 0.0,
+            "results": []
+        }
+
+    scores = [r.score for r in results if r.score is not None]
+    avg_score = round(sum(scores) / len(scores), 2) if scores else 0.0
+    cutoff = exam.cutoff_value or 50.0
+    pass_count = sum(1 for s in scores if s >= cutoff)
+    pass_rate = round((pass_count / len(scores)) * 100, 1) if scores else 0.0
+
+    return {
+        "exam_id": exam_id,
+        "title": exam.title,
+        "total_attempts": len(results),
+        "average_score": avg_score,
+        "highest_score": max(scores) if scores else 0.0,
+        "lowest_score": min(scores) if scores else 0.0,
+        "pass_count": pass_count,
+        "pass_rate_pct": pass_rate,
+        "results": [
+            {
+                "student_id": r.student_id,
+                "score": r.score,
+                "total_marks": r.total_marks,
+                "integrity_score": r.integrity_score,
+                "date_taken": r.date_taken.isoformat() if r.date_taken else None
+            }
+            for r in results
+        ]
+    }
+
+
+# --- 4. STUDENT PERFORMANCE ANALYTICS ---
+@analytics_bp.get('/student/{student_id}')
+def student_performance_analytics(student_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Fetches a student's attempt history, average scores, and integrity record."""
+    student = db.get(User, student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    results = db.query(Result).filter_by(student_id=student_id).all()
+    attempts_data = []
+    scores = []
+    
+    for r in results:
+        exam = db.get(Exam, r.exam_id)
+        if r.score is not None:
+            scores.append(r.score)
+        attempts_data.append({
+            "exam_id": r.exam_id,
+            "exam_title": exam.title if exam else "Unknown Exam",
+            "score": r.score,
+            "total_marks": r.total_marks,
+            "integrity_score": r.integrity_score,
+            "integrity_label": r.integrity_label,
+            "date_taken": r.date_taken.isoformat() if r.date_taken else None
+        })
+
+    avg_score = round(sum(scores) / len(scores), 2) if scores else 0.0
+
+    return {
+        "student_id": student.id,
+        "username": student.username,
+        "enrollment_id": student.enrollment_id,
+        "total_exams_taken": len(results),
+        "average_score": avg_score,
+        "attempts": attempts_data
+    }

@@ -66,17 +66,79 @@ def evaluate_subjective_answer(question_text, reference_answer, student_answer, 
         print(f"AI Grading Error: {e}")
         # fallback to simulation below
             
-    # Simulation (Fallback)
-    import difflib
-    
+    # Fallback Tier 1: Local Dense Semantic Vector Model (SentenceTransformers all-MiniLM-L6-v2)
     if not reference_answer or str(reference_answer).strip() == "":
         return {
             "suggested_marks": 0.0,
-            "explanation": "(Simulated AI) No reference answer provided by teacher. Requires manual grading.",
+            "explanation": "No reference answer provided by teacher. Requires manual grading.",
             "confidence": 0.0,
-            "model_name": "difflib_simulation",
+            "model_name": "manual_review_required",
             "review_status": "NEEDS_REVIEW"
         }
+
+    try:
+        from ai.duplicate_detector import _get_st_model
+        import torch
+        from sentence_transformers import util
+
+        st_model = _get_st_model()
+        if st_model is not None:
+            # 1. Holistic Semantic Similarity
+            ref_emb = st_model.encode(str(reference_answer), convert_to_tensor=True)
+            stu_emb = st_model.encode(str(student_answer), convert_to_tensor=True)
+            cos_sim = float(util.cos_sim(stu_emb, ref_emb)[0][0])
+            cos_sim = max(0.0, min(1.0, cos_sim))
+
+            # 2. Rubric Concept Coverage (if rubric provided)
+            rubric_coverage = cos_sim
+            if rubric and str(rubric).strip():
+                rubric_lines = [r.strip() for r in str(rubric).split("\n") if len(r.strip()) > 5]
+                if rubric_lines:
+                    # Break student answer into sentence clauses
+                    student_clauses = [s.strip() for s in re.split(r'[.!?\n]', str(student_answer)) if len(s.strip()) > 5]
+                    if not student_clauses:
+                        student_clauses = [str(student_answer)]
+                    
+                    clause_embs = st_model.encode(student_clauses, convert_to_tensor=True)
+                    rubric_embs = st_model.encode(rubric_lines, convert_to_tensor=True)
+                    coverage_matrix = util.cos_sim(rubric_embs, clause_embs)
+                    
+                    # For each rubric requirement, find best matching clause in student answer
+                    max_per_rubric = torch.max(coverage_matrix, dim=1).values
+                    rubric_coverage = float(torch.mean(max_per_rubric))
+                    rubric_coverage = max(0.0, min(1.0, rubric_coverage))
+
+            # 3. Weighted Score Formula (60% semantic similarity + 40% rubric coverage)
+            composite_ratio = (0.60 * cos_sim) + (0.40 * rubric_coverage)
+            suggested_marks = round(max(0.0, min(float(max_marks), float(max_marks) * composite_ratio)), 2)
+
+            # 4. Confidence Calibration
+            confidence = round(0.40 + (0.45 * cos_sim), 2)
+            review_status = "COMPLETED" if confidence >= 0.70 and cos_sim >= 0.65 else "NEEDS_REVIEW"
+
+            explanation = (
+                f"(Local Semantic Model: all-MiniLM-L6-v2) Semantic similarity: {cos_sim:.2f}, "
+                f"Rubric alignment: {rubric_coverage:.2f}. "
+            )
+            if composite_ratio >= 0.80:
+                explanation += "Strong conceptual mastery demonstrated across all key points."
+            elif composite_ratio >= 0.50:
+                explanation += "Partial correctness; key concepts present with some missing details."
+            else:
+                explanation += "Low semantic alignment with reference solution."
+
+            return {
+                "suggested_marks": suggested_marks,
+                "explanation": explanation,
+                "confidence": confidence,
+                "model_name": "all-MiniLM-L6-v2-local",
+                "review_status": review_status
+            }
+    except Exception as st_err:
+        print(f"[subjective_evaluator] Local ST model failed: {st_err}")
+
+    # Fallback Tier 2: String Heuristic (difflib)
+    import difflib
         
     similarity = difflib.SequenceMatcher(None, str(reference_answer).lower(), str(student_answer).lower()).ratio()
     

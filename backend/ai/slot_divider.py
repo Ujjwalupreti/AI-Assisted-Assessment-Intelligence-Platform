@@ -63,13 +63,12 @@ def generate_slots(
     if seed is not None:
         random.seed(seed)
 
-    from database import get_db
-    db = next(get_db())
-
-    # Fetch eligible questions
-    questions = db.query(Question).filter_by(
-        exam_id=exam_id, is_archived=False
-    ).all()
+    from database import get_db_session
+    with get_db_session() as db:
+        # Fetch eligible questions
+        questions = db.query(Question).filter_by(
+            exam_id=exam_id, is_archived=False
+        ).all()
 
     if not questions:
         return {"error": "No questions available.", "slots": []}
@@ -185,38 +184,37 @@ def save_slots(exam_id: int, slot_data: dict) -> dict:
     Persist generated slots to the database.
     Clears old slots for this exam first.
     """
-    from database import get_db
-    db = next(get_db())
-    
-    # Clear old slots
-    old_slots = db.query(ExamSlot).filter_by(exam_id=exam_id).all()
-    for old in old_slots:
-        db.query(ExamSlotQuestion).filter_by(slot_id=old.id).delete()
-        db.delete(old)
-    db.commit()
+    from database import get_db_session
+    with get_db_session() as db:
+        # Clear old slots
+        old_slots = db.query(ExamSlot).filter_by(exam_id=exam_id).all()
+        for old in old_slots:
+            db.query(ExamSlotQuestion).filter_by(slot_id=old.id).delete()
+            db.delete(old)
+        db.commit()
 
-    saved_slots = []
-    for slot_info in slot_data.get("slots", []):
-        slot = ExamSlot(
-            exam_id=exam_id,
-            slot_number=slot_info['slot_number'],
-            total_marks=slot_info.get("total_marks", 0.0),
-            quality_score=slot_info.get("quality_score"),
-            bloom_distribution=json.dumps(slot_info.get("bloom_distribution", {})),
-            difficulty_distribution=json.dumps(slot_info.get("difficulty_distribution", {})),
-            topic_distribution=json.dumps(slot_info.get("topic_distribution", {}))
-        )
-        db.add(slot)
-        db.flush()
+        saved_slots = []
+        for slot_info in slot_data.get("slots", []):
+            slot = ExamSlot(
+                exam_id=exam_id,
+                slot_number=slot_info['slot_number'],
+                total_marks=slot_info.get("total_marks", 0.0),
+                quality_score=slot_info.get("quality_score"),
+                bloom_distribution=json.dumps(slot_info.get("bloom_distribution", {})),
+                difficulty_distribution=json.dumps(slot_info.get("difficulty_distribution", {})),
+                topic_distribution=json.dumps(slot_info.get("topic_distribution", {}))
+            )
+            db.add(slot)
+            db.flush()
 
-        for order, q_id in enumerate(slot_info.get("question_ids", [])):
-            sq = ExamSlotQuestion(slot_id=slot.id, question_id=q_id)
-            db.add(sq)
+            for order, q_id in enumerate(slot_info.get("question_ids", [])):
+                sq = ExamSlotQuestion(slot_id=slot.id, question_id=q_id)
+                db.add(sq)
 
-        saved_slots.append(slot.id)
+            saved_slots.append(slot.id)
 
-    db.commit()
-    return {"saved_slot_ids": saved_slots}
+        db.commit()
+        return {"saved_slot_ids": saved_slots}
 
 
 def _rebalance_slots(slots: List[List[Question]], blueprint: dict, max_iterations: int = 50):

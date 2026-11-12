@@ -47,6 +47,18 @@ Thumbs.db
 backend/.env
 *.local
 
+# Model weights & Large Binaries
+*.pt
+*.bin
+*.onnx
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+instance/*.db
+backend/instance/*.db
+
 # Backups
 *.bak
 backups/

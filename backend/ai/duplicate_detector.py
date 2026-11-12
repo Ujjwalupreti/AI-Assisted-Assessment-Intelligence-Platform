@@ -62,9 +62,7 @@ def detect_duplicates(new_text: str, existing_questions: List[Dict]) -> dict:
     if not existing_questions or not new_text.strip():
         return _no_duplicate()
 
-    from database import get_db
-    db = next(get_db())
-
+    from database import get_db_session
     model = _get_st_model()
 
     if model:
@@ -76,39 +74,40 @@ def detect_duplicates(new_text: str, existing_questions: List[Dict]) -> dict:
             q_ids = [q["id"] for q in existing_questions]
 
             # Batch fetch existing embeddings
-            existing_emb_records = db.query(QuestionEmbedding).filter(
-                QuestionEmbedding.question_id.in_(q_ids),
-                QuestionEmbedding.embedding_model == "all-MiniLM-L6-v2"
-            ).all()
-            emb_dict = {r.question_id: json.loads(r.embedding_data) for r in existing_emb_records}
+            with get_db_session() as db:
+                existing_emb_records = db.query(QuestionEmbedding).filter(
+                    QuestionEmbedding.question_id.in_(q_ids),
+                    QuestionEmbedding.embedding_model == "all-MiniLM-L6-v2"
+                ).all()
+                emb_dict = {r.question_id: json.loads(r.embedding_data) for r in existing_emb_records}
 
-            embeddings2_list = []
-            valid_qs = []
-            new_embeddings_to_save = []
+                embeddings2_list = []
+                valid_qs = []
+                new_embeddings_to_save = []
 
-            for q in existing_questions:
-                if q["id"] in emb_dict:
-                    embeddings2_list.append(emb_dict[q["id"]])
-                else:
-                    # Compute missing embedding
-                    emb = model.encode(q["text"])
-                    emb_list = emb.tolist()
-                    new_embeddings_to_save.append(QuestionEmbedding(
-                        question_id=q["id"],
-                        embedding_data=json.dumps(emb_list),
-                        embedding_model="all-MiniLM-L6-v2"
-                    ))
-                    embeddings2_list.append(emb_list)
-                valid_qs.append(q)
+                for q in existing_questions:
+                    if q["id"] in emb_dict:
+                        embeddings2_list.append(emb_dict[q["id"]])
+                    else:
+                        # Compute missing embedding
+                        emb = model.encode(q["text"])
+                        emb_list = emb.tolist()
+                        new_embeddings_to_save.append(QuestionEmbedding(
+                            question_id=q["id"],
+                            embedding_data=json.dumps(emb_list),
+                            embedding_model="all-MiniLM-L6-v2"
+                        ))
+                        embeddings2_list.append(emb_list)
+                    valid_qs.append(q)
 
-            # Batch commit new embeddings (fix: was committing per-question)
-            if new_embeddings_to_save:
-                try:
-                    for rec in new_embeddings_to_save:
-                        db.add(rec)
-                    db.commit()
-                except Exception:
-                    db.rollback()
+                # Batch commit new embeddings
+                if new_embeddings_to_save:
+                    try:
+                        for rec in new_embeddings_to_save:
+                            db.add(rec)
+                        db.commit()
+                    except Exception:
+                        db.rollback()
 
             if not valid_qs:
                 return _no_duplicate()
@@ -201,42 +200,41 @@ def group_duplicates(exam_id: int, threshold: float = 0.85) -> dict:
     Returns summary: {groups_created, total_flagged, questions_scanned}
     """
     from models import Question, QuestionEmbedding, DuplicateGroup, QuestionDuplicate
-    from database import get_db
-    db = next(get_db())
+    from database import get_db_session
 
     model = _get_st_model()
     if not model:
         return {"error": "SentenceTransformer model not available", "groups_created": 0}
 
-    # Fetch non-archived questions
-    questions = db.query(Question).filter_by(exam_id=exam_id).all()
-    # Filter out archived manually if needed, or assume all are non-archived if column is absent.
-    if len(questions) < 2:
-        return {"groups_created": 0, "total_flagged": 0, "questions_scanned": len(questions)}
+    with get_db_session() as db:
+        # Fetch non-archived questions
+        questions = db.query(Question).filter_by(exam_id=exam_id).all()
+        if len(questions) < 2:
+            return {"groups_created": 0, "total_flagged": 0, "questions_scanned": len(questions)}
 
-    # Get or compute embeddings
-    q_data = []
-    embeddings_list = []
+        # Get or compute embeddings
+        q_data = []
+        embeddings_list = []
 
-    for q in questions:
-        existing_emb = db.query(QuestionEmbedding).filter_by(
-            question_id=q.id, embedding_model="all-MiniLM-L6-v2"
-        ).first()
+        for q in questions:
+            existing_emb = db.query(QuestionEmbedding).filter_by(
+                question_id=q.id, embedding_model="all-MiniLM-L6-v2"
+            ).first()
 
-        if existing_emb:
-            emb = json.loads(existing_emb.embedding_json)
-        else:
-            emb = model.encode(q.text).tolist()
-            db.add(QuestionEmbedding(
-                question_id=q.id,
-                embedding_data=json.dumps(emb),
-                embedding_model="all-MiniLM-L6-v2"
-            ))
+            if existing_emb:
+                emb = json.loads(existing_emb.embedding_data)
+            else:
+                emb = model.encode(q.text).tolist()
+                db.add(QuestionEmbedding(
+                    question_id=q.id,
+                    embedding_data=json.dumps(emb),
+                    embedding_model="all-MiniLM-L6-v2"
+                ))
 
-        q_data.append(q)
-        embeddings_list.append(emb)
+            q_data.append(q)
+            embeddings_list.append(emb)
 
-    db.commit()
+        db.commit()
 
     # Pairwise similarity
     import torch
@@ -338,41 +336,41 @@ def archive_duplicates(group_id: int, keeper_question_id: int = None) -> dict:
                            If None, keeps the one marked is_primary.
     """
     from models import Question, DuplicateGroup, QuestionDuplicate
-    from database import get_db
-    db = next(get_db())
+    from database import get_db_session
 
-    group = db.get(DuplicateGroup, group_id)
-    if not group:
-        return {"error": "Group not found"}
+    with get_db_session() as db:
+        group = db.get(DuplicateGroup, group_id)
+        if not group:
+            return {"error": "Group not found"}
 
-    members = db.query(QuestionDuplicate).filter_by(group_id=group_id).all()
-    if not members:
-        return {"error": "No members in group"}
+        members = db.query(QuestionDuplicate).filter_by(group_id=group_id).all()
+        if not members:
+            return {"error": "No members in group"}
 
-    # Determine keeper
-    if keeper_question_id:
-        keeper_ids = {keeper_question_id}
-    else:
-        keeper_ids = {m.question_id for m in members if m.is_primary}
-
-    if not keeper_ids:
-        # Default: keep the oldest (lowest id)
-        keeper_ids = {min(m.question_id for m in members)}
-
-    archived_count = 0
-    for member in members:
-        if member.question_id in keeper_ids:
-            member.status = 'KEPT'
-            member.is_primary = True
+        # Determine keeper
+        if keeper_question_id:
+            keeper_ids = {keeper_question_id}
         else:
-            member.status = 'ARCHIVED'
-            q = db.get(Question, member.question_id)
-            if q:
-                q.is_archived = True
-                archived_count += 1
+            keeper_ids = {m.question_id for m in members if m.is_primary}
 
-    group.status = 'RESOLVED'
-    group.resolved_at = datetime.utcnow()
-    db.commit()
+        if not keeper_ids:
+            # Default: keep the oldest (lowest id)
+            keeper_ids = {min(m.question_id for m in members)}
 
-    return {"archived": archived_count, "kept": len(keeper_ids), "group_status": "RESOLVED"}
+        archived_count = 0
+        for member in members:
+            if member.question_id in keeper_ids:
+                member.status = 'KEPT'
+                member.is_primary = True
+            else:
+                member.status = 'ARCHIVED'
+                q = db.get(Question, member.question_id)
+                if q:
+                    q.is_archived = True
+                    archived_count += 1
+
+        group.status = 'RESOLVED'
+        group.resolved_at = datetime.utcnow()
+        db.commit()
+
+        return {"archived": archived_count, "kept": len(keeper_ids), "group_status": "RESOLVED"}

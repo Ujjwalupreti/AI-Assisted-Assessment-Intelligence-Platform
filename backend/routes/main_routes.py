@@ -57,11 +57,15 @@ def save_base64_image(base64_data):
         print(f"Image save error: {e}")
         return None
 
-# --- 📸 SERVE UPLOADED IMAGES TO TEACHER ---
+# --- 📸 SERVE UPLOADED IMAGES TO TEACHER (PATH TRAVERSAL PROTECTED) ---
 @exam_bp.get('/uploads/{filename}')
-def serve_upload(filename):
-    upload_dir = os.path.join(os.getcwd(), 'static', 'uploads')
-    return FileResponse(os.path.join(upload_dir, filename))
+def serve_upload(filename: str):
+    clean_name = os.path.basename(filename)
+    upload_dir = os.path.abspath(os.path.join(os.getcwd(), 'static', 'uploads'))
+    target_path = os.path.abspath(os.path.join(upload_dir, clean_name))
+    if not target_path.startswith(upload_dir) or not os.path.isfile(target_path):
+        return JSONResponse(status_code=404, content={"message": "File not found"})
+    return FileResponse(target_path)
 
 # --- 🗑 DELETE RESULT ---
 @exam_bp.delete('/results/{result_id}')
@@ -891,16 +895,18 @@ def analyze_frame(db: Session = Depends(get_db), current_user: User = Depends(ge
             if face_center_x < center_x_min or face_center_x > center_x_max:
                 looking_away = True
 
-        # 📱 YOLO OBJECT DETECTION
+        # 📱 YOLO OBJECT DETECTION (Classes: 63=laptop, 67=cell phone, 73=book)
         objects = []
         if model:
-            results = model.predict(high_res_img, classes=[67, 73], conf=0.15, verbose=False)
+            results = model.predict(high_res_img, classes=[63, 67, 73], conf=0.35, verbose=False)
             for r in results:
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
                     conf = float(box.conf[0])
                     if cls_id == 67:
                         objects.append({"class": "phone", "conf": conf})
+                    elif cls_id == 63:
+                        objects.append({"class": "laptop", "conf": conf})
                     elif cls_id == 73:
                         objects.append({"class": "book", "conf": conf})
 

@@ -6,28 +6,28 @@ Provides structured access to exam blueprints and gap analysis.
 import json
 from typing import Dict, Optional, List
 from models import Exam, Question, AssessmentBlueprint
-from database import get_db
+from database import get_db_session
 
 def get_blueprint(exam_id: int) -> Optional[dict]:
-    db = next(get_db())
-    # Try AssessmentBlueprint table first
-    ab = db.query(AssessmentBlueprint).filter_by(exam_id=exam_id).order_by(
-        AssessmentBlueprint.created_at.desc()
-    ).first()
-    
-    if ab and ab.blueprint_json:
-        try:
-            return json.loads(ab.blueprint_json)
-        except json.JSONDecodeError:
-            pass
+    with get_db_session() as db:
+        # Try AssessmentBlueprint table first
+        ab = db.query(AssessmentBlueprint).filter_by(exam_id=exam_id).order_by(
+            AssessmentBlueprint.created_at.desc()
+        ).first()
+        
+        if ab and ab.blueprint_json:
+            try:
+                return json.loads(ab.blueprint_json)
+            except json.JSONDecodeError:
+                pass
 
-    # Fallback to Exam.blueprint_json
-    exam = db.get(Exam, exam_id)
-    if exam and exam.blueprint_json:
-        try:
-            return json.loads(exam.blueprint_json)
-        except json.JSONDecodeError:
-            pass
+        # Fallback to Exam.blueprint_json
+        exam = db.get(Exam, exam_id)
+        if exam and exam.blueprint_json:
+            try:
+                return json.loads(exam.blueprint_json)
+            except json.JSONDecodeError:
+                pass
 
     return None
 
@@ -46,13 +46,33 @@ def get_actual_distribution(exam_id: int) -> dict:
     }
     Values are COUNTS (not percentages).
     """
-    db = next(get_db())
-    questions = db.query(Question).filter(Question.exam_id == exam_id, Question.is_archived == False).all()
-    
-    bloom_counts = {}
-    difficulty_counts = {}
-    topic_counts = {}
-    total_marks = 0.0
+    with get_db_session() as db:
+        questions = db.query(Question).filter(Question.exam_id == exam_id, Question.is_archived == False).all()
+        
+        bloom_counts = {}
+        difficulty_counts = {}
+        topic_counts = {}
+        total_marks = 0.0
+        
+        for q in questions:
+            b = q.bloom_level or "Unknown"
+            bloom_counts[b] = bloom_counts.get(b, 0) + 1
+            
+            d = q.difficulty or "Unknown"
+            difficulty_counts[d] = difficulty_counts.get(d, 0) + 1
+            
+            t = q.topic or "Unknown"
+            topic_counts[t] = topic_counts.get(t, 0) + 1
+            
+            total_marks += (q.max_marks or 1.0)
+            
+        return {
+            "bloom_distribution": bloom_counts,
+            "difficulty_distribution": difficulty_counts,
+            "topic_distribution": topic_counts,
+            "total_questions": len(questions),
+            "total_marks": round(total_marks, 2)
+        }
     
     for q in questions:
         bloom = q.bloom_level or "Uncategorized"

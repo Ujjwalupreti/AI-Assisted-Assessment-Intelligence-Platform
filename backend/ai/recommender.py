@@ -8,7 +8,7 @@ and returns actionable ADD / REMOVE / REPLACE / REVIEW recommendations.
 Configurable ranking weights.
 """
 import json
-from database import get_db
+from database import get_db_session
 from typing import List, Dict, Optional
 from models import Question, QuestionAiAnalysis
 
@@ -174,61 +174,74 @@ def _search_question_bank(
     Ranks by weighted score.
     """
     # Base query: all non-archived questions NOT in this exam
-    db = next(get_db())
-    query = db.query(Question).filter(
-        Question.exam_id != exam_id,
-        Question.is_archived == False
-    )
+    with get_db_session() as db:
+        query = db.query(Question).filter(
+            Question.exam_id != exam_id,
+            Question.is_archived == False
+        )
 
-    # Apply filters
-    if target_topic:
-        query = query.filter(Question.topic == target_topic)
-    if target_bloom:
-        query = query.filter(Question.bloom_level == target_bloom)
-    if target_difficulty:
-        query = query.filter(Question.difficulty == target_difficulty)
-
-    candidates = query.limit(50).all()  # Fetch up to 50, then rank
-
-    if not candidates:
-        # Try broader search (just topic match)
+        # Apply filters
         if target_topic:
-            candidates = db.query(Question).filter(
-                Question.exam_id != exam_id,
-                Question.is_archived == False,
-                Question.topic == target_topic
-            ).limit(20).all()
+            query = query.filter(Question.topic == target_topic)
+        if target_bloom:
+            query = query.filter(Question.bloom_level == target_bloom)
+        if target_difficulty:
+            query = query.filter(Question.difficulty == target_difficulty)
 
-    if not candidates:
-        return []
+        candidates = query.limit(50).all()  # Fetch up to 50, then rank
+
+        if not candidates:
+            # Try broader search (just topic match)
+            if target_topic:
+                candidates = db.query(Question).filter(
+                    Question.exam_id != exam_id,
+                    Question.is_archived == False,
+                    Question.topic == target_topic
+                ).limit(20).all()
+
+        if not candidates:
+            return []
+
+        detached_candidates = [
+            {
+                "id": q.id,
+                "text": q.text,
+                "exam_id": q.exam_id,
+                "topic": q.topic,
+                "bloom_level": q.bloom_level,
+                "difficulty": q.difficulty,
+                "quality_score": q.ai_quality_score
+            }
+            for q in candidates
+        ]
 
     # Rank candidates
     scored = []
-    for q in candidates:
+    for q in detached_candidates:
         score = 0.0
         w = weights or DEFAULT_WEIGHTS
 
         # Topic match
-        if target_topic and q.topic == target_topic:
+        if target_topic and q["topic"] == target_topic:
             score += w.get("topic_match", 0.2)
 
         # Bloom match
-        if target_bloom and q.bloom_level == target_bloom:
+        if target_bloom and q["bloom_level"] == target_bloom:
             score += w.get("bloom_match", 0.15)
 
         # Difficulty match
-        if target_difficulty and q.difficulty == target_difficulty:
+        if target_difficulty and q["difficulty"] == target_difficulty:
             score += w.get("difficulty_match", 0.15)
 
         # Quality score
-        quality = q.ai_quality_score or 0.5
+        quality = q["quality_score"] or 0.5
         score += w.get("quality_score", 0.1) * quality
 
         # Blueprint match bonus (all criteria match)
         all_match = True
-        if target_topic and q.topic != target_topic: all_match = False
-        if target_bloom and q.bloom_level != target_bloom: all_match = False
-        if target_difficulty and q.difficulty != target_difficulty: all_match = False
+        if target_topic and q["topic"] != target_topic: all_match = False
+        if target_bloom and q["bloom_level"] != target_bloom: all_match = False
+        if target_difficulty and q["difficulty"] != target_difficulty: all_match = False
         if all_match:
             score += w.get("blueprint_match", 0.3)
 
@@ -238,14 +251,14 @@ def _search_question_bank(
 
     return [
         {
-            "question_id": q.id,
-            "text_preview": q.text[:120],
+            "question_id": q["id"],
+            "text_preview": q["text"][:120],
             "score": round(s, 3),
-            "exam_id": q.exam_id,
-            "topic": q.topic,
-            "bloom_level": q.bloom_level,
-            "difficulty": q.difficulty,
-            "quality_score": q.ai_quality_score
+            "exam_id": q["exam_id"],
+            "topic": q["topic"],
+            "bloom_level": q["bloom_level"],
+            "difficulty": q["difficulty"],
+            "quality_score": q["quality_score"]
         }
         for s, q in scored[:limit]
     ]
@@ -256,48 +269,48 @@ def _find_removable_questions(exam_id: int, category_key: str, category_value: s
     Find questions that could be removed to reduce excess.
     Prefers lowest quality, most recently added.
     """
-    db = next(get_db())
-    query = db.query(Question).filter_by(exam_id=exam_id, is_archived=False)
+    with get_db_session() as db:
+        query = db.query(Question).filter_by(exam_id=exam_id, is_archived=False)
 
-    if category_key == "bloom":
-        query = query.filter(Question.bloom_level == category_value)
-    elif category_key == "difficulty":
-        query = query.filter(Question.difficulty == category_value)
-    elif category_key == "topic":
-        query = query.filter(Question.topic == category_value)
+        if category_key == "bloom":
+            query = query.filter(Question.bloom_level == category_value)
+        elif category_key == "difficulty":
+            query = query.filter(Question.difficulty == category_value)
+        elif category_key == "topic":
+            query = query.filter(Question.topic == category_value)
 
-    # Order by quality (lowest first), then by id (newest first)
-    questions = query.order_by(
-        Question.ai_quality_score.asc().nullsfirst(),
-        Question.id.desc()
-    ).limit(count).all()
+        # Order by quality (lowest first), then by id (newest first)
+        questions = query.order_by(
+            Question.ai_quality_score.asc().nullsfirst(),
+            Question.id.desc()
+        ).limit(count).all()
 
-    return [
-        {
-            "question_id": q.id,
-            "text_preview": q.text[:120],
-            "score": round(q.ai_quality_score or 0.0, 3),
-            "exam_id": q.exam_id,
-            "topic": q.topic,
-            "bloom_level": q.bloom_level,
-            "difficulty": q.difficulty,
-            "quality_score": q.ai_quality_score
-        }
-        for q in questions
-    ]
+        return [
+            {
+                "question_id": q.id,
+                "text_preview": q.text[:120],
+                "score": round(q.ai_quality_score or 0.0, 3),
+                "exam_id": q.exam_id,
+                "topic": q.topic,
+                "bloom_level": q.bloom_level,
+                "difficulty": q.difficulty,
+                "quality_score": q.ai_quality_score
+            }
+            for q in questions
+        ]
 
 
 def _find_low_quality_questions(exam_id: int, threshold: float = 0.5) -> List[dict]:
     """Find questions in the exam with quality below threshold."""
-    db = next(get_db())
-    questions = db.query(Question).filter(
-        Question.exam_id == exam_id,
-        Question.is_archived == False,
-        Question.ai_quality_score != None,
-        Question.ai_quality_score < threshold
-    ).all()
+    with get_db_session() as db:
+        questions = db.query(Question).filter(
+            Question.exam_id == exam_id,
+            Question.is_archived == False,
+            Question.ai_quality_score != None,
+            Question.ai_quality_score < threshold
+        ).all()
 
-    return [
-        {"id": q.id, "text": q.text[:80], "quality": q.ai_quality_score or 0.0}
-        for q in questions
-    ]
+        return [
+            {"id": q.id, "text": q.text[:80], "quality": q.ai_quality_score or 0.0}
+            for q in questions
+        ]
