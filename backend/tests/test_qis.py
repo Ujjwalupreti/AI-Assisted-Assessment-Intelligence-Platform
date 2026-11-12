@@ -9,9 +9,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import create_app
 from models import Question, QuestionAiAnalysis, Exam, User
-from ai.mcq_validator import normalize_option, validate_mcq
-from ai.pipeline import analyze_question_qis
-from ai.qis_persistence import persist_qis_analysis
+from ai.classifiers.mcq_validator import normalize_option, validate_mcq
+from ai.core.pipeline import analyze_question_qis
+from ai.core.qis_persistence import persist_qis_analysis
 
 def test_mcq_validator_normalization():
     assert normalize_option("A. Apple ") == "apple"

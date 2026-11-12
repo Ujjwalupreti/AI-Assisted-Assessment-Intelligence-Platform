@@ -92,3 +92,4 @@ backend/static/*
 # Frontend Unused Assets
 frontend/emoji_names.json
 frontend/emojis.json
+node_modules

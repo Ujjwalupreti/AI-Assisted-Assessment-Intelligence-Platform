@@ -141,7 +141,7 @@ async def run_validation_suite():
         # 3. QUESTION CREATION & QIS PIPELINE VALIDATION
         # =====================================================================
         print("\n--- 3. Testing Question Intelligence System (QIS) ---")
-        from ai.pipeline import analyze_question_qis
+        from ai.core.pipeline import analyze_question_qis
 
         # Test QIS single question analysis
         test_q = "What is the worst-case time complexity of searching in an unbalanced Binary Search Tree?"
@@ -221,7 +221,7 @@ async def run_validation_suite():
         print("  [PASS] Questions Seeded: 2 MCQs, 1 Subjective, 1 Analytical")
 
         # Test Assembly Engine with feasible and constrained quotas
-        from ai.assessment_assembler import assemble_assessment
+        from ai.assembly.assessment_assembler import assemble_assessment
         db = SessionLocal()
         assembly_res = assemble_assessment(
             db=db,
@@ -305,7 +305,7 @@ async def run_validation_suite():
         # 6. SUBJECTIVE EVALUATION & TEACHER OVERRIDE
         # =====================================================================
         print("\n--- 6. Testing Subjective AI Evaluation & Teacher Override ---")
-        from ai.subjective_evaluator import evaluate_subjective_answer
+        from ai.evaluation.subjective_evaluator import evaluate_subjective_answer
 
         subj_eval = evaluate_subjective_answer(
             question_text=q2_text,

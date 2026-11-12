@@ -2,9 +2,9 @@ import sys, traceback
 
 print('=== TEST 1: Import all backend modules ===')
 modules = [
-    'ai.pipeline', 'ai.schemas', 'ai.qis_persistence', 
-    'ai.duplicate_detector', 'ai.mcq_validator', 'ai.bloom_alignment',
-    'ai.llm_client', 'ai.question_generator',
+    'ai.core.pipeline', 'ai.core.schemas', 'ai.core.qis_persistence', 
+    'ai.generation.duplicate_detector', 'ai.classifiers.mcq_validator', 'ai.classifiers.bloom_alignment',
+    'ai.core.llm_client', 'ai.generation.question_generator',
     'ml.inference'
 ]
 for mod in modules:
@@ -17,7 +17,7 @@ for mod in modules:
 print()
 print('=== TEST 2: Pipeline with MCQ ===')
 try:
-    from ai.pipeline import analyze_question_qis
+    from ai.core.pipeline import analyze_question_qis
     result = analyze_question_qis(
         question_text='What is the time complexity of binary search?',
         options={'A': 'O(log n)', 'B': 'O(n)', 'C': 'O(n log n)', 'D': 'O(1)'},
@@ -51,7 +51,7 @@ except Exception as e:
 print()
 print('=== TEST 3: MCQ Validation Bugs ===')
 try:
-    from ai.mcq_validator import validate_mcq
+    from ai.classifiers.mcq_validator import validate_mcq
     # Test with duplicate options
     r1 = validate_mcq('test?', {'A': 'same', 'B': 'same', 'C': 'different', 'D': 'other'}, 'A')
     assert not r1['valid'], 'Should fail on duplicate options'
@@ -73,7 +73,7 @@ except Exception as e:
 print()
 print('=== TEST 4: Duplicate Detector (no DB context) ===')
 try:
-    from ai.duplicate_detector import detect_duplicates, _risk_label
+    from ai.generation.duplicate_detector import detect_duplicates, _risk_label
     assert _risk_label(0.5) == 'NONE', 'Risk label wrong for 0.5'
     assert _risk_label(0.75) == 'LOW_DUPLICATE_RISK', 'Risk label wrong for 0.75'
     assert _risk_label(0.85) == 'MEDIUM_DUPLICATE_RISK', 'Risk label wrong for 0.85'
@@ -92,7 +92,7 @@ except Exception as e:
 print()
 print('=== TEST 5: Schema field standardization ===')
 try:
-    from ai.schemas import BloomResult, TopicResult, DifficultyResult, AnalysisResult
+    from ai.core.schemas import BloomResult, TopicResult, DifficultyResult, AnalysisResult
     # Check that schemas are importable and correct
     import inspect
     bloom_hints = BloomResult.__annotations__

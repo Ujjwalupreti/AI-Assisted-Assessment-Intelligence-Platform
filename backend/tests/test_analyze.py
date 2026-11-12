@@ -8,8 +8,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from app import create_app
 app = create_app()
 from models import Question, QuestionAiAnalysis
-from ai.pipeline import analyze_question_qis
-from ai.qis_persistence import persist_qis_analysis
+from ai.core.pipeline import analyze_question_qis
+from ai.core.qis_persistence import persist_qis_analysis
 
 def test_analyze_all():
     with app.app_context():
