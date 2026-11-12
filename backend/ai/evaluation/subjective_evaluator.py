@@ -77,7 +77,7 @@ def evaluate_subjective_answer(question_text, reference_answer, student_answer, 
         }
 
     try:
-        from ai.duplicate_detector import _get_st_model
+        from ai.generation.duplicate_detector import _get_st_model
         import torch
         from sentence_transformers import util
 

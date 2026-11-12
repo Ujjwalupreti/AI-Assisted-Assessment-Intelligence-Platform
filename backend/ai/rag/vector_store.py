@@ -1,7 +1,7 @@
 import json
 from models import DocumentChunk
 from database import SessionLocal
-from ai.duplicate_detector import _get_st_model
+from ai.generation.duplicate_detector import _get_st_model
 
 def store_document_chunks(document_id: int, chunks: list[str]):
     """

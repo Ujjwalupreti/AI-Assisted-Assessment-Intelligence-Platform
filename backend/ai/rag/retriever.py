@@ -3,7 +3,7 @@ from database import get_db_session
 import torch
 from sentence_transformers import util
 from models import DocumentChunk
-from ai.duplicate_detector import _get_st_model
+from ai.generation.duplicate_detector import _get_st_model
 
 def retrieve_context(query: str, top_k: int = 3, course_name: str = None) -> str:
     """
