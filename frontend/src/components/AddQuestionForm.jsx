@@ -53,8 +53,8 @@ const AddQuestionForm = ({ examId, hasPassword, examPassword, onCancel, editingQ
     setIsAnalyzing(true);
     setAiAnalysisData(null);
     try {
-      // Calls the old route which now uses QIS pipeline under the hood
-      const res = await fetch(`${API_BASE_URL}/exams/${examId}/questions/analyze`, {
+      // Calls QIS pipeline for comprehensive classification & quality analysis
+      const res = await fetch(`${API_BASE_URL}/ai/questions/analyze`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ 

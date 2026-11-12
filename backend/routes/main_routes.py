@@ -25,7 +25,13 @@ from ultralytics import YOLO
 # 🧠 INITIALIZE AI MODELS GLOBALLY
 # ==========================================
 try:
-    model = YOLO('yolov8n.pt')
+    _yolo_paths = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'yolov8n.pt'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'yolov8n.pt'),
+        'yolov8n.pt'
+    ]
+    _chosen_path = next((p for p in _yolo_paths if os.path.exists(p)), 'yolov8n.pt')
+    model = YOLO(_chosen_path)
 except Exception as e:
     print("WARNING: Error loading YOLO model. Object detection disabled:", e)
     model = None

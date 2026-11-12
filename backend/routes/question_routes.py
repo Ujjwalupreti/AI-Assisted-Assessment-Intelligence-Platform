@@ -52,6 +52,21 @@ def get_questions(exam_id: int, db: Session = Depends(get_db), current_user: Use
         return JSONResponse(status_code=500, content={"message": "Internal server error"})
 
 
+@question_bp.post('/{exam_id}/questions/analyze')
+def proxy_analyze_question(exam_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(...)):
+    """Compatibility route proxying to QIS pipeline."""
+    try:
+        from ai.pipeline import analyze_question_qis
+        q_text = data.get('text', '')
+        options = data.get('options')
+        course = data.get('course')
+        result = analyze_question_qis(q_text, options=options, course_name=course)
+        return JSONResponse(status_code=200, content=result.dict() if hasattr(result, 'dict') else result)
+    except Exception as e:
+        print(f"Error analyzing question via proxy: {e}")
+        return JSONResponse(status_code=500, content={"message": str(e)})
+
+
 @question_bp.post('/{exam_id}/questions')
 def add_question(exam_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(...)):
     try:
