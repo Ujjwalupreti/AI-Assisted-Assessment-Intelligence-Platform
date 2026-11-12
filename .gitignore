@@ -63,3 +63,32 @@ backend/instance/*.db
 *.bak
 backups/
 node_modules
+
+# Temporary & Scratch Audit Files
+/New_AI_report.md
+/New_report.md
+/New_task.md
+/QIS_AI_ML_IMPLEMENTATION_AND_INTEGRATION_AUDIT.md
+/ai_services_analysis_report.md
+/analysis_report.txt
+/automated_question_system.md
+/codebase_cleanup_and_refactoring_guide.md
+/execute_cleanup.py
+/migrate.py
+/project_analysis.md
+/project_analysis_report.md
+/package.json
+/package-lock.json
+
+# Backend Local Data & Uploads
+backend/Python_Fundamentals_Demo.txt
+backend/model_mismatch_report.txt
+backend/qis_verification_report.json
+backend/scripts/legacy_patches/
+backend/tests/scratch_qis_test.py
+backend/static/uploads/*
+backend/static/*
+
+# Frontend Unused Assets
+frontend/emoji_names.json
+frontend/emojis.json
