@@ -2,7 +2,7 @@
   "functional": {
     "teacher_login": {
       "status": "PASS",
-      "latency_ms": 733.33
+      "latency_ms": 510.13
     },
     "student_login": {
       "status": "PASS"
@@ -13,7 +13,7 @@
     "rag_ingest": {
       "status": "PASS",
       "chunks": 2,
-      "latency_ms": 43626.49
+      "latency_ms": 15963.25
     },
     "create_exam": {
       "status": "PASS",
@@ -22,17 +22,17 @@
     "exam_start": {
       "status": "PASS",
       "attempt_id": 1,
-      "latency_ms": 46.75
+      "latency_ms": 46.1
     },
     "proctoring_frame": {
       "status": "PASS",
       "vision_status": "missing",
-      "latency_ms": 961.44
+      "latency_ms": 1278.29
     },
     "exam_submit": {
       "status": "PASS",
       "score": 4.0,
-      "latency_ms": 81.79
+      "latency_ms": 104.15
     },
     "teacher_override": {
       "status": "PASS",
@@ -51,7 +51,7 @@
   "ai_ml": {
     "rag_retrieval": {
       "status": "PASS",
-      "latency_ms": 60.16,
+      "latency_ms": 77.86,
       "relevant": true
     },
     "qis_classification": {
@@ -59,7 +59,7 @@
       "bloom": "Remember",
       "difficulty": "Easy",
       "question_type": "MCQ",
-      "latency_ms": 12596.13
+      "latency_ms": 13988.43
     },
     "assessment_assembly": {
       "status": "PASS",
@@ -100,9 +100,9 @@
   },
   "performance": {
     "api_ping": {
-      "avg_ms": 3.1,
-      "p95_ms": 5.09,
-      "throughput_req_sec": 322.2
+      "avg_ms": 2.84,
+      "p95_ms": 3.31,
+      "throughput_req_sec": 352.7
     }
   },
   "recovery": {},
