@@ -93,3 +93,7 @@ backend/static/*
 frontend/emoji_names.json
 frontend/emojis.json
 node_modules
+
+# Deliverable Archives
+*.zip
+package_team_modules.py
