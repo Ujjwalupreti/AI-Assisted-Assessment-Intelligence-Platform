@@ -9,9 +9,10 @@ import { useAuth } from './AuthContext';
 // Helper component to protect routes
 const PrivateRoute = ({ children, role }) => {
   const { user } = useAuth();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   
-  // 1. If not logged in, go to Login
-  if (!user) {
+  // 1. If not logged in or missing token, go to Login
+  if (!user || !token || token.trim() === '' || token === 'null' || token === 'undefined') {
       return <Navigate to="/login" />;
   }
 

@@ -212,15 +212,15 @@ def create_exam(db: Session = Depends(get_db), current_user: User = Depends(get_
 # --- GET EXAMS (🚨 WITH TEACHER PRIVACY & PASSWORD FLAGS) ---
 @exam_bp.get('')
 @exam_bp.get('/')
-
-def get_exams(db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
+def get_exams(db: Session = Depends(get_db), current_user: User = Depends(get_current_user), request: Request = None):
     try:
         user_id = current_user.id
         user = db.get(User, user_id)
 
-        # 🚨 PRIVACY FIX: Teachers ONLY see exams they created!
+        # 🚨 PRIVACY FIX: Teachers see exams they created or unassigned template exams
         if user.role == 'teacher':
-            exams = db.execute(select(Exam).filter_by(creator_id=user.id)).scalars().all()
+            from sqlalchemy import or_
+            exams = db.execute(select(Exam).filter(or_(Exam.creator_id == user.id, Exam.creator_id == None))).scalars().all()
         else:
             # Students still see all visible exams
             exams = db.execute(select(Exam).filter_by(is_visible=True)).scalars().all()

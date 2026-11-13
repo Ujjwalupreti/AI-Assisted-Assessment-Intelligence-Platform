@@ -62,8 +62,19 @@ const TeacherDashboard = () => {
   const fetchExams = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/exams`, { headers: getHeaders() });
-      if (res.ok) setExams(await res.json());
-    } catch (e) {}
+      if (res.status === 401) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        window.location.href = '/login?expired=1';
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        setExams(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error("Error fetching exams:", e);
+    }
   };
 
   useEffect(() => { if (view === 'list') fetchExams(); }, [view]);

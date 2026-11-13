@@ -204,11 +204,25 @@ const StudentDashboard = () => {
         }
         
         const examRes = await fetch(`${API_BASE_URL}/exams`, { headers: getHeaders() });
-        const examsData = await examRes.json();
+        if (examRes.status === 401) {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = '/login?expired=1';
+            return;
+        }
+        const examsData = examRes.ok ? await examRes.json() : [];
+        if (!Array.isArray(examsData)) {
+            console.warn("Exams response is not an array:", examsData);
+            setExams([]);
+            return;
+        }
 
         const attemptRes = await fetch(`${API_BASE_URL}/attempts/my_attempts`, { headers: getHeaders() });
         let attemptedIds = [];
-        if (attemptRes.ok) attemptedIds = await attemptRes.json();
+        if (attemptRes.ok) {
+            const rawAttempts = await attemptRes.json();
+            if (Array.isArray(rawAttempts)) attemptedIds = rawAttempts;
+        }
 
         const mergedExams = examsData.map(exam => ({
             ...exam,

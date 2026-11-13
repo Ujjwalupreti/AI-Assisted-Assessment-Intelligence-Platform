@@ -5,7 +5,15 @@ import { useNavigate } from 'react-router-dom';
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('expired')) {
+        return "Session expired or unauthorized. Please sign in to continue.";
+      }
+    }
+    return '';
+  });
   const [isLoading, setIsLoading] = useState(false);
   
   const { login, user, API_BASE_URL } = useAuth();
@@ -100,6 +108,13 @@ const Login = () => {
             {isLoading ? "Verifying..." : "Login"}
           </button>
         </form>
+
+        <div style={{ marginTop: '1.5rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary, #f8fafc)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-secondary, #64748b)' }}>
+          <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Default Test Accounts:</div>
+          <div>• <strong>Teacher:</strong> <code>teacher</code> / <code>Teacher123!</code> (or <code>ujjwal1</code>)</div>
+          <div>• <strong>Student:</strong> <code>student</code> / <code>Student123!</code> (or <code>student1</code>)</div>
+          <div>• <strong>Admin:</strong> <code>admin</code> / <code>adminpass</code></div>
+        </div>
       </div>
     </div>
   );

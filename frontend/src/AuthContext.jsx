@@ -5,10 +5,12 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('token');
+    
+    // Both user AND a valid token must exist together
+    if (storedUser && storedToken && storedToken.trim() !== '' && storedToken !== 'null' && storedToken !== 'undefined') {
         try { 
             const parsed = JSON.parse(storedUser);
-            // If the user state is a string (like a JWT token saved by mistake), wipe it!
             if (typeof parsed !== 'object' || parsed === null || !parsed.role) {
                 localStorage.removeItem('user');
                 localStorage.removeItem('token');
@@ -16,18 +18,20 @@ export const AuthProvider = ({ children }) => {
             }
             return parsed; 
         } 
-        catch (e) { localStorage.removeItem('user'); return null; }
+        catch (e) {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            return null;
+        }
+    } else {
+        // Clear broken partial credentials
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        return null;
     }
-    return null;
   });
   
-// Automatically uses 'localhost' if you typed localhost, 
-// or uses your IP address if you connected from your phone!
-const API_BASE_URL = '/api';
-
-  useEffect(() => {
-      // keeping useEffect empty since state is initialized synchronously now
-  }, []);
+  const API_BASE_URL = '/api';
 
   const login = (userData, token) => {
     setUser(userData);
@@ -42,16 +46,31 @@ const API_BASE_URL = '/api';
     window.location.href = '/login';
   };
 
-  const getHeaders = () => {
-    const token = localStorage.getItem('token') || '';
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
+  const handleAuthError = (status) => {
+    if (status === 401) {
+      setUser(null);
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login?expired=1';
+      }
+    }
+  };
+
+  const getHeaders = (includeContentType = true) => {
+    const token = localStorage.getItem('token');
+    const headers = {};
+    if (includeContentType) {
+        headers['Content-Type'] = 'application/json';
+    }
+    if (token && token.trim() !== '' && token !== 'null' && token !== 'undefined') {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, API_BASE_URL, getHeaders }}>
+    <AuthContext.Provider value={{ user, login, logout, API_BASE_URL, getHeaders, handleAuthError }}>
       {children}
     </AuthContext.Provider>
   );
