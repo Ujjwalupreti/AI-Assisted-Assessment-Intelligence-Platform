@@ -94,6 +94,10 @@ frontend/emoji_names.json
 frontend/emojis.json
 node_modules
 
-# Deliverable Archives
+# Deliverable Archives and Folders
 *.zip
 package_team_modules.py
+Vishal_Singh_Assessment_Creation_and_Intelligence/
+Ujjwal_Upreti_Monitoring_and_Proctoring/
+Vaibhav_Joshi_Evaluation_and_Analysis/
+
