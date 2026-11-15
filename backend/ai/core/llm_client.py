@@ -62,8 +62,8 @@ def generate_json(prompt: str, model_name: str = "gemini-1.5-flash", temperature
     for attempt in range(2):
         result_container = {"success": False, "text": None, "error": None}
         
-        # Run generation in a thread to enforce timeout
-        t = threading.Thread(target=_do_generation, args=(model, prompt, result_container))
+        # Run generation in a daemon thread to enforce timeout without blocking process exit
+        t = threading.Thread(target=_do_generation, args=(model, prompt, result_container), daemon=True)
         t.start()
         t.join(timeout=LLM_TIMEOUT_SECONDS)
         

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body, Request
+from fastapi import APIRouter, Depends, Body, Request, UploadFile, File
 from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -6,13 +6,14 @@ from database import get_db
 from auth_middleware import get_current_user, get_teacher_user
 from datetime import datetime
 import jwt
-from models import User, Exam, Result, Question, ExamAttempt, Answer, ProctoringEvent
+from models import User, Exam, Result, Question, ExamAttempt, Answer, ProctoringEvent, AnswerVersion, AnswerIntegrityEvent
 import os
 import base64
 import uuid
 import csv
 import io
 import json
+import hashlib
 from config import Config
 
 # 🚨 NEW IMPORTS FOR AI IMAGE DECODING
@@ -593,26 +594,83 @@ def submit_exam(exam_id, db: Session = Depends(get_db), current_user: User = Dep
         total_max_marks = 0.0
         for q in questions:
             total_max_marks += q.max_marks
-            selected = answers.get(str(q.id))
+            raw_ans = answers.get(str(q.id))
             is_correct = False
             marks_for_this_q = 0.0
             
+            selected_option = None
+            answer_text = None
+            answer_type = "TEXT"
+            structured_answer = None
+            file_reference = None
+            file_hash = None
+            
+            if isinstance(raw_ans, dict):
+                answer_type = raw_ans.get('answer_type', 'TEXT')
+                answer_text = raw_ans.get('text', '')
+                selected_option = raw_ans.get('selected_option', answer_text if not q.is_subjective else None)
+                structured_answer = raw_ans.get('structured_answer')
+                file_reference = raw_ans.get('file_reference')
+                file_hash = raw_ans.get('file_hash')
+            else:
+                if q.is_subjective:
+                    answer_text = raw_ans
+                else:
+                    selected_option = raw_ans
+            
             if not q.is_subjective:
-                if selected is not None and selected == q.correct_option:
+                answer_type = "MCQ"
+                if selected_option is not None and selected_option == q.correct_option:
                     is_correct = True
                     marks_for_this_q = q.max_marks
                     score += marks_for_this_q
                     
-            # Save individual answers for later AI analytics
-            answer_record = Answer(
+            existing_ans = db.query(Answer).filter_by(attempt_id=attempt.id, question_id=q.id).first()
+            if existing_ans:
+                existing_ans.selected_option = selected_option
+                existing_ans.answer_text = answer_text
+                existing_ans.answer_type = answer_type
+                existing_ans.structured_answer = structured_answer
+                existing_ans.file_reference = file_reference
+                existing_ans.file_hash = file_hash
+                existing_ans.is_correct = is_correct
+                existing_ans.marks_awarded = marks_for_this_q
+                existing_ans.submission_status = 'SUBMITTED'
+                existing_ans.submitted_at = datetime.utcnow()
+                existing_ans.version_number += 1
+                answer_record = existing_ans
+            else:
+                answer_record = Answer(
+                    attempt_id=attempt.id,
+                    question_id=q.id,
+                    selected_option=selected_option,
+                    answer_text=answer_text,
+                    answer_type=answer_type,
+                    structured_answer=structured_answer,
+                    file_reference=file_reference,
+                    file_hash=file_hash,
+                    is_correct=is_correct,
+                    marks_awarded=marks_for_this_q,
+                    version_number=1,
+                    submission_status='SUBMITTED',
+                    submitted_at=datetime.utcnow()
+                )
+                db.add(answer_record)
+            db.flush()
+            
+            # Log immutable version history
+            db.add(AnswerVersion(
+                answer_id=answer_record.id,
                 attempt_id=attempt.id,
                 question_id=q.id,
-                selected_option=selected if not q.is_subjective else None,
-                answer_text=selected if q.is_subjective else None,
-                is_correct=is_correct,
-                marks_awarded=marks_for_this_q
-            )
-            db.add(answer_record)
+                version_number=answer_record.version_number,
+                answer_type=answer_type,
+                answer_text=answer_text,
+                structured_answer=structured_answer,
+                file_reference=file_reference,
+                file_hash=file_hash,
+                change_summary="Final Exam Submission"
+            ))
 
         # Keep original Result for backwards compatibility with Teacher Dashboard
 
@@ -650,6 +708,243 @@ def submit_exam(exam_id, db: Session = Depends(get_db), current_user: User = Dep
     except Exception as e:
         print(f"SUBMIT ERROR: {e}")
         return JSONResponse(status_code=500, content={"message": "Error submitting exam"})
+
+
+# --- 💾 AUTOSAVE DRAFT ANSWER ---
+@exam_bp.post('/{exam_id}/answer_autosave')
+def autosave_answer(exam_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(...)):
+    try:
+        user_id = current_user.id
+        attempt = db.query(ExamAttempt).filter_by(exam_id=exam_id, student_id=user_id, status='IN_PROGRESS').first()
+        if not attempt:
+            return JSONResponse(status_code=403, content={"message": "No active exam attempt found."})
+            
+        question_id = data.get('question_id')
+        if not question_id:
+            return JSONResponse(status_code=400, content={"message": "question_id is required."})
+            
+        question = db.get(Question, question_id)
+        if not question or question.exam_id != exam_id:
+            return JSONResponse(status_code=404, content={"message": "Question not found in this exam."})
+            
+        answer_text = data.get('answer_text', '')
+        answer_type = data.get('answer_type', 'TEXT')
+        structured_answer = data.get('structured_answer')
+        file_reference = data.get('file_reference')
+        file_hash = data.get('file_hash')
+        selected_option = data.get('selected_option')
+        
+        # Upsert into Answer
+        ans = db.query(Answer).filter_by(attempt_id=attempt.id, question_id=question_id).first()
+        if ans:
+            has_changed = (ans.answer_text != answer_text or 
+                           ans.structured_answer != structured_answer or 
+                           ans.selected_option != selected_option or
+                           ans.file_reference != file_reference)
+            if has_changed:
+                ans.version_number = (ans.version_number or 1) + 1
+                ans.answer_text = answer_text
+                ans.answer_type = answer_type
+                ans.structured_answer = structured_answer
+                ans.file_reference = file_reference
+                ans.file_hash = file_hash
+                ans.selected_option = selected_option
+                ans.submission_status = 'AUTOSAVED'
+                ans.updated_at = datetime.utcnow()
+                
+                version_entry = AnswerVersion(
+                    answer_id=ans.id,
+                    attempt_id=attempt.id,
+                    question_id=question_id,
+                    version_number=ans.version_number,
+                    answer_type=answer_type,
+                    answer_text=answer_text,
+                    structured_answer=structured_answer,
+                    file_reference=file_reference,
+                    file_hash=file_hash,
+                    change_summary="Autosave Revision"
+                )
+                db.add(version_entry)
+        else:
+            ans = Answer(
+                attempt_id=attempt.id,
+                question_id=question_id,
+                selected_option=selected_option,
+                answer_text=answer_text,
+                answer_type=answer_type,
+                structured_answer=structured_answer,
+                file_reference=file_reference,
+                file_hash=file_hash,
+                is_correct=False,
+                marks_awarded=0.0,
+                version_number=1,
+                submission_status='AUTOSAVED',
+                updated_at=datetime.utcnow()
+            )
+            db.add(ans)
+            db.flush()
+            
+            version_entry = AnswerVersion(
+                answer_id=ans.id,
+                attempt_id=attempt.id,
+                question_id=question_id,
+                version_number=1,
+                answer_type=answer_type,
+                answer_text=answer_text,
+                structured_answer=structured_answer,
+                file_reference=file_reference,
+                file_hash=file_hash,
+                change_summary="Initial Autosave"
+            )
+            db.add(version_entry)
+            
+        db.commit()
+        return JSONResponse(status_code=200, content={
+            "status": "success", 
+            "version": ans.version_number,
+            "version_number": ans.version_number,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        print(f"AUTOSAVE ERROR: {e}")
+        return JSONResponse(status_code=500, content={"message": "Failed to autosave answer."})
+
+
+# --- 🛡️ RECORD ANSWER INTEGRITY EVENT (PASTE, BLUR, RAPID EDIT) ---
+@exam_bp.post('/{exam_id}/integrity_event')
+def log_integrity_event(exam_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(...)):
+    try:
+        user_id = current_user.id
+        attempt = db.query(ExamAttempt).filter_by(exam_id=exam_id, student_id=user_id, status='IN_PROGRESS').first()
+        if not attempt:
+            return JSONResponse(status_code=403, content={"message": "No active exam attempt found."})
+            
+        event_type = data.get('event_type', 'UNKNOWN_ACTIVITY')
+        question_id = data.get('question_id')
+        char_count = int(data.get('character_count', 0))
+        metadata = data.get('metadata', {})
+        
+        # Deduplicate identical events within 2 seconds
+        recent = db.query(AnswerIntegrityEvent).filter_by(
+            attempt_id=attempt.id,
+            event_type=event_type,
+            question_id=question_id
+        ).order_by(AnswerIntegrityEvent.timestamp.desc()).first()
+        
+        if recent and (datetime.utcnow() - recent.timestamp).total_seconds() < 2.0:
+            return JSONResponse(status_code=200, content={"status": "duplicate_suppressed"})
+            
+        severity = "LOW"
+        if event_type == "PASTE_DETECTED" and char_count > 300:
+            severity = "HIGH"
+        elif event_type in ("DUPLICATE_FILE_DETECTED", "FULLSCREEN_EXIT"):
+            severity = "HIGH"
+        elif event_type in ("BROWSER_BLUR", "PASTE_DETECTED"):
+            severity = "MEDIUM"
+            
+        event = AnswerIntegrityEvent(
+            attempt_id=attempt.id,
+            question_id=question_id,
+            event_type=event_type,
+            character_count=char_count,
+            severity=severity,
+            metadata_json=json.dumps(metadata) if isinstance(metadata, dict) else str(metadata),
+            review_status="PENDING"
+        )
+        db.add(event)
+        
+        if severity in ("MEDIUM", "HIGH"):
+            db.add(ProctoringEvent(
+                attempt_id=attempt.id,
+                event_type=event_type,
+                severity=severity,
+                confidence=1.0,
+                duration_ms=0,
+                metadata_json=json.dumps({"source": "answer_integrity", "chars": char_count})
+            ))
+            
+        db.commit()
+        return JSONResponse(status_code=200, content={"status": "logged", "event_id": event.id})
+    except Exception as e:
+        print(f"INTEGRITY EVENT ERROR: {e}")
+        return JSONResponse(status_code=500, content={"message": "Failed to log integrity event."})
+
+
+# --- 📁 UPLOAD ANSWER FILE (PDF, PNG, JPG) WITH DUPLICATE HASH DETECTION ---
+@exam_bp.post('/{exam_id}/upload_answer_file')
+def upload_answer_file(exam_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    try:
+        user_id = current_user.id
+        attempt = db.query(ExamAttempt).filter_by(exam_id=exam_id, student_id=user_id, status='IN_PROGRESS').first()
+        if not attempt:
+            return JSONResponse(status_code=403, content={"message": "No active exam attempt found."})
+            
+        ext = os.path.splitext(file.filename)[1].lower()
+        if ext not in ['.pdf', '.png', '.jpg', '.jpeg', '.webp']:
+            return JSONResponse(status_code=400, content={"message": "Invalid file type. Allowed: PDF, PNG, JPG, JPEG, WEBP."})
+            
+        contents = file.file.read()
+        file_size_mb = len(contents) / (1024 * 1024)
+        if file_size_mb > 10.0:
+            return JSONResponse(status_code=400, content={"message": "File exceeds maximum size limit of 10 MB."})
+            
+        if ext == '.pdf':
+            try:
+                import pypdf
+                pdf_reader = pypdf.PdfReader(io.BytesIO(contents))
+                if len(pdf_reader.pages) > 10:
+                    return JSONResponse(status_code=400, content={"message": "PDF exceeds maximum page limit of 10 pages."})
+            except Exception:
+                pass
+                
+        file_sha256 = hashlib.sha256(contents).hexdigest()
+        
+        duplicate_match = db.query(Answer).join(ExamAttempt).filter(
+            ExamAttempt.exam_id == exam_id,
+            ExamAttempt.student_id != user_id,
+            Answer.file_hash == file_sha256
+        ).first()
+        
+        duplicate_detected = False
+        if duplicate_match:
+            duplicate_detected = True
+            db.add(AnswerIntegrityEvent(
+                attempt_id=attempt.id,
+                event_type="DUPLICATE_FILE_DETECTED",
+                severity="HIGH",
+                metadata_json=json.dumps({"hash": file_sha256, "matched_attempt": duplicate_match.attempt_id}),
+                review_status="PENDING"
+            ))
+            db.add(ProctoringEvent(
+                attempt_id=attempt.id,
+                event_type="DUPLICATE_FILE_DETECTED",
+                severity="HIGH",
+                confidence=1.0,
+                metadata_json=json.dumps({"hash": file_sha256})
+            ))
+            
+        upload_dir = os.path.join(Config.BASE_DIR, 'static', 'uploads', 'answers')
+        os.makedirs(upload_dir, exist_ok=True)
+        unique_filename = f"{uuid.uuid4().hex}{ext}"
+        saved_path = os.path.join(upload_dir, unique_filename)
+        with open(saved_path, 'wb') as f:
+            f.write(contents)
+            
+        relative_url = f"/static/uploads/answers/{unique_filename}"
+        db.commit()
+        
+        return JSONResponse(status_code=200, content={
+            "file_reference": saved_path,
+            "file_url": relative_url,
+            "file_hash": file_sha256,
+            "filename": file.filename,
+            "duplicate_detected": duplicate_detected,
+            "size_kb": round(len(contents) / 1024, 2)
+        })
+    except Exception as e:
+        print(f"FILE UPLOAD ERROR: {e}")
+        return JSONResponse(status_code=500, content={"message": f"File upload failed: {str(e)}"})
+
 
 
 # --- 📊 GET RESULTS FOR TEACHER DASHBOARD (🚨 WITH SECURITY LOCK) ---
@@ -770,7 +1065,7 @@ def get_exam_review(exam_id, db: Session = Depends(get_db), current_user: User =
                     'C': q.option_c,
                     'D': q.option_d,
                 },
-                'correct_option': q.correct_option,
+                'correct_option': q.correct_option if (current_user.role == 'teacher') else None,
                 'is_subjective': q.is_subjective,
                 'student_answer': ans.selected_option if ans else None,
                 'is_correct': ans.is_correct if ans else False,
@@ -823,27 +1118,49 @@ def get_student_exam_review_for_teacher(exam_id, student_id, db: Session = Depen
             review_data.append({
                 'id': ans.id if ans else None,
                 'question_id': q.id,
+                'question_type': q.question_type or ('SUBJECTIVE' if q.is_subjective else 'MCQ'),
                 'question_text': q.text,
                 'options': {'A': q.option_a, 'B': q.option_b, 'C': q.option_c, 'D': q.option_d},
-                'correct_option': q.correct_option,
+                'correct_option': q.correct_option if (current_user.role == 'teacher') else None,
                 'is_subjective': q.is_subjective,
                 'reference_answer': q.reference_answer,
                 'student_answer': ans.answer_text if q.is_subjective else (ans.selected_option if ans else None),
+                'answer_type': ans.answer_type if ans else 'TEXT',
+                'structured_answer': ans.structured_answer if ans else None,
+                'file_reference': ans.file_reference if ans else None,
+                'file_hash': ans.file_hash if ans else None,
+                'version_number': ans.version_number if ans else 1,
                 'is_correct': ans.is_correct if ans else False,
                 'marks_awarded': ans.marks_awarded if ans else 0.0,
                 'ai_suggested_marks': ans.ai_suggested_marks if ans else None,
                 'ai_explanation': ans.ai_explanation if ans else None,
+                'ai_confidence': ans.ai_confidence if ans else None,
+                'ai_model_name': ans.ai_model_name if ans else None,
+                'review_status': ans.review_status if ans else 'PENDING',
                 'teacher_feedback': ans.teacher_feedback if ans else None
             })
             
         result = db.execute(select(Result).filter_by(student_id=student_id, exam_id=exam_id).order_by(Result.id.desc())).scalars().first()
+        
+        # Fetch integrity events for this attempt (Paste detection, blur, duplicate files)
+        integrity_events = db.query(AnswerIntegrityEvent).filter_by(attempt_id=attempt.id).order_by(AnswerIntegrityEvent.timestamp.asc()).all()
+        integrity_data = [{
+            'id': ev.id,
+            'question_id': ev.question_id,
+            'event_type': ev.event_type,
+            'character_count': ev.character_count,
+            'severity': ev.severity,
+            'timestamp': ev.timestamp.isoformat() if ev.timestamp else None,
+            'metadata': json.loads(ev.metadata_json) if ev.metadata_json else {}
+        } for ev in integrity_events]
             
         return JSONResponse(status_code=200, content={
             'score': result.score if result else sum(a.marks_awarded for a in answers) if answers else 0,
             'total': len(questions),
             'tab_switches': result.tab_switches if result else 0,
             'audio_warnings': result.audio_warnings if result else 0,
-            'questions': review_data
+            'questions': review_data,
+            'integrity_events': integrity_data
         })
     except Exception as e:
         print(f"GET EXAM REVIEW FOR TEACHER ERROR: {e}")
@@ -1020,7 +1337,10 @@ def evaluate_exam_subjective_answers(exam_id, db: Session = Depends(get_db), cur
                     student_answer=ans.answer_text,
                     max_marks=question.max_marks, # --- BUG FIX: Use actual max_marks ---
                     rubric=question.rubric, # --- NEW: Pass rubric ---
-                    use_rag=use_rag
+                    use_rag=use_rag,
+                    answer_type=getattr(ans, 'answer_type', 'TEXT'),
+                    structured_answer=getattr(ans, 'structured_answer', None),
+                    file_reference=getattr(ans, 'file_reference', None)
                 )
                 
                 ans.ai_suggested_marks = evaluation.get("suggested_marks", 0.0)

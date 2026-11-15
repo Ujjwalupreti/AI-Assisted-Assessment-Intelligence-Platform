@@ -278,6 +278,20 @@ const TeacherDashboard = () => {
                     </div>
                 </div>
                 <div className="p-4 overflow-auto flex-grow-1">
+                    {reviewModal.integrity_events && reviewModal.integrity_events.length > 0 && (
+                        <div className="alert alert-warning py-2 px-3 mb-3 small border-warning">
+                            <strong>⚠️ Answer Integrity Alerts ({reviewModal.integrity_events.length}):</strong>
+                            <ul className="m-0 ps-3 mt-1">
+                                {reviewModal.integrity_events.map((ev, i) => (
+                                    <li key={i}>
+                                        <span className="fw-bold">{ev.event_type}</span> at {new Date(ev.timestamp).toLocaleTimeString()} 
+                                        <span className={`badge ms-1 ${ev.severity === 'HIGH' ? 'bg-danger' : 'bg-warning text-dark'}`}>{ev.severity}</span>
+                                        {ev.character_count > 0 ? ` (${ev.character_count} chars)` : ''}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                     {reviewModal.questions.map((q, idx) => (
                         <div key={idx} className="card border-0 shadow-sm mb-4">
                             <div className="card-body">
@@ -287,8 +301,28 @@ const TeacherDashboard = () => {
                                     <div className="bg-light p-3 rounded border">
                                         <div className="row">
                                             <div className="col-md-6 mb-3">
-                                                <span className="fw-bold small text-muted d-block mb-1">Student's Answer:</span>
-                                                <div className="p-2 bg-white rounded border h-100">{q.student_answer || <i className="text-muted">No answer provided</i>}</div>
+                                                <span className="fw-bold small text-muted d-block mb-1">
+                                                    Student's Answer: {q.answer_type && <span className="badge bg-secondary ms-1">{q.answer_type}</span>}
+                                                </span>
+                                                <div className="p-2 bg-white rounded border h-100">
+                                                    {q.structured_answer ? (
+                                                        <div>
+                                                            <small className="text-muted d-block mb-1">Structured Model Data:</small>
+                                                            <pre className="small m-0 text-dark bg-light p-2 rounded" style={{maxHeight:'150px', overflow:'auto'}}>{q.structured_answer}</pre>
+                                                        </div>
+                                                    ) : q.file_reference ? (
+                                                        <div>
+                                                            <p className="small mb-1 text-primary">Attached File: {q.file_reference.split(/[/\\]/).pop()}</p>
+                                                            {q.file_reference.toLowerCase().endsWith('.pdf') ? (
+                                                                <a href={`${API_BASE_URL.replace('/api', '')}/static/uploads/answers/${q.file_reference.split(/[/\\]/).pop()}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-primary">View PDF Document ↗</a>
+                                                            ) : (
+                                                                <img src={`${API_BASE_URL.replace('/api', '')}/static/uploads/answers/${q.file_reference.split(/[/\\]/).pop()}`} alt="Student Solution" style={{maxWidth: '100%', maxHeight: '200px', borderRadius: '4px'}} />
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        q.student_answer || <i className="text-muted">No answer provided</i>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="col-md-6 mb-3">
                                                 <span className="fw-bold small text-success d-block mb-1">Reference Answer:</span>

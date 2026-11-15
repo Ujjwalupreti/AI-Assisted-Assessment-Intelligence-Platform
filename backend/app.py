@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from config import Config
 from database import Base, engine
+import os
 import models # MUST import models so metadata is registered
 
 # Ensure tables are created
@@ -48,6 +50,11 @@ def create_app():
     app.include_router(analytics_bp, prefix='/api/analytics', tags=['analytics'])
     app.include_router(qis_bp, prefix='/api/ai/questions', tags=['qis'])
     app.include_router(rag_bp, prefix='/api/rag', tags=['rag'])
+
+    # Mount Static Uploads
+    static_dir = os.path.join(Config.BASE_DIR, 'static')
+    os.makedirs(os.path.join(static_dir, 'uploads', 'answers'), exist_ok=True)
+    app.mount('/static', StaticFiles(directory=static_dir), name='static')
 
     @app.get('/api/ping')
     def ping():

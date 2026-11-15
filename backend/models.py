@@ -163,6 +163,15 @@ class Answer(Base):
     question_id = Column(Integer, ForeignKey('question.id'), nullable=False)
     selected_option = Column(String(255))
     answer_text = Column(Text)
+    answer_type = Column(String(50), default='TEXT') # TEXT, MATH_EQUATION, AUTOMATA_GRAPH, TABLE, IMAGE_UPLOAD, PDF_UPLOAD
+    structured_answer = Column(Text, nullable=True) # JSON representation of automata, AST, or table
+    file_reference = Column(String(500), nullable=True) # Relative path to uploaded file
+    file_hash = Column(String(64), nullable=True) # SHA-256 hash for integrity & duplicate detection
+    version_number = Column(Integer, default=1)
+    submission_status = Column(String(50), default='SUBMITTED') # DRAFT, AUTOSAVED, SUBMITTED
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    submitted_at = Column(DateTime, nullable=True)
     is_correct = Column(Boolean)
     marks_awarded = Column(Float)
     ai_suggested_marks = Column(Float)
@@ -171,6 +180,34 @@ class Answer(Base):
     ai_model_name = Column(String(100))
     review_status = Column(String(50))
     teacher_feedback = Column(Text)
+
+class AnswerVersion(Base):
+    __tablename__ = 'answer_version'
+    id = Column(Integer, primary_key=True)
+    answer_id = Column(Integer, ForeignKey('answer.id'), nullable=False)
+    attempt_id = Column(Integer, ForeignKey('exam_attempt.id'), nullable=False)
+    question_id = Column(Integer, ForeignKey('question.id'), nullable=False)
+    version_number = Column(Integer, nullable=False)
+    answer_type = Column(String(50), default='TEXT')
+    answer_text = Column(Text, nullable=True)
+    structured_answer = Column(Text, nullable=True)
+    file_reference = Column(String(500), nullable=True)
+    file_hash = Column(String(64), nullable=True)
+    change_summary = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class AnswerIntegrityEvent(Base):
+    __tablename__ = 'answer_integrity_event'
+    id = Column(Integer, primary_key=True)
+    attempt_id = Column(Integer, ForeignKey('exam_attempt.id'), nullable=False)
+    question_id = Column(Integer, ForeignKey('question.id'), nullable=True)
+    event_type = Column(String(100), nullable=False) # PASTE_DETECTED, RAPID_EDIT, UNUSUAL_CHANGE, BROWSER_BLUR, FULLSCREEN_EXIT
+    character_count = Column(Integer, default=0)
+    severity = Column(String(20), default='LOW')
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    metadata_json = Column(Text, nullable=True)
+    review_status = Column(String(50), default='PENDING') # PENDING, REVIEWED, DISMISSED
+
 
 class QuestionVersion(Base):
     __tablename__ = 'question_version'

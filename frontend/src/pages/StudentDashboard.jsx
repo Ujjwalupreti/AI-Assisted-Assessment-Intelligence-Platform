@@ -7,6 +7,7 @@ import Webcam from "react-webcam";
 import '../styles/StudentDashboard.css'; 
 import { decryptText, hashText } from '../utils/encryption'; //  IMPORT ENCRYPTION UTILS
 import { FileText, Lock, Clock, Calendar, AlertCircle, AlertTriangle } from 'lucide-react';
+import MultiFormatAnswerInput from '../components/assessment/MultiFormatAnswerInput';
 
 const StudentDashboard = () => {
   const { user, API_BASE_URL, getHeaders } = useAuth();
@@ -1059,13 +1060,14 @@ const StudentDashboard = () => {
                               <p className="lead fw-bold text-dark mb-5" style={{lineHeight: '1.6'}}>{currentQ.text}</p>
                               
                               {currentQ.is_subjective ? (
-                                  <textarea 
-                                      className="form-control" 
-                                      rows="6" 
-                                      placeholder="Type your answer here..."
-                                      value={answers[currentQ.id] || ''}
-                                      onChange={(e) => handleOptionSelect(currentQ.id, e.target.value)}
-                                  ></textarea>
+                                  <MultiFormatAnswerInput 
+                                      question={currentQ}
+                                      examId={activeExam.id}
+                                      initialAnswer={answers[currentQ.id]}
+                                      onAnswerChange={(qId, val) => handleOptionSelect(qId, val)}
+                                      apiBaseUrl={API_BASE_URL}
+                                      getHeaders={getHeaders}
+                                  />
                               ) : (
                                   <div className="d-flex flex-column gap-3">
                                       {['A','B','C','D'].map(opt => (
@@ -1089,13 +1091,14 @@ const StudentDashboard = () => {
                                       <p className="fw-bold">{q.text}</p>
                                       
                                       {q.is_subjective ? (
-                                          <textarea 
-                                              className="form-control" 
-                                              rows="4" 
-                                              placeholder="Type your answer here..."
-                                              value={answers[q.id] || ''}
-                                              onChange={(e) => handleOptionSelect(q.id, e.target.value)}
-                                          ></textarea>
+                                          <MultiFormatAnswerInput 
+                                              question={q}
+                                              examId={activeExam.id}
+                                              initialAnswer={answers[q.id]}
+                                              onAnswerChange={(qId, val) => handleOptionSelect(qId, val)}
+                                              apiBaseUrl={API_BASE_URL}
+                                              getHeaders={getHeaders}
+                                          />
                                       ) : (
                                           <div className="d-flex flex-column gap-2">
                                               {['A','B','C','D'].map(opt => (
