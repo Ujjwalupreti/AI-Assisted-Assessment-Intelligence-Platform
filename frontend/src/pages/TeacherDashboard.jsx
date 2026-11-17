@@ -6,6 +6,7 @@ import ManageExam from '../components/assessment/ManageExam';
 import ManageStudents from '../components/ManageStudents';
 import KnowledgeBase from '../components/KnowledgeBase';
 import PageHeader from '../components/common/PageHeader';
+import AutomataDiagramViewer from '../components/assessment/AutomataDiagramViewer';
 import { FileEdit, LayoutList, Users, BrainCircuit, Trash2, Settings, BarChart2, FileText, Lock, CheckCircle2, Circle } from 'lucide-react';
 import { AlertTriangle, PenTool, XCircle } from 'lucide-react';
 import { hashText } from '../utils/encryption';
@@ -295,7 +296,10 @@ const TeacherDashboard = () => {
                     {reviewModal.questions.map((q, idx) => (
                         <div key={idx} className="card border-0 shadow-sm mb-4">
                             <div className="card-body">
-                                <h6 className="fw-bold mb-3">Q{idx+1}: {q.question_text}</h6>
+                                <h6 className="fw-bold mb-3 d-flex justify-content-between align-items-center">
+                                    <span>Q{idx+1}: {q.question_text}</span>
+                                    <span className="badge bg-primary">{q.max_marks || 1} mark(s)</span>
+                                </h6>
                                 
                                 {q.is_subjective ? (
                                     <div className="bg-light p-3 rounded border">
@@ -307,6 +311,20 @@ const TeacherDashboard = () => {
                                                 <div className="p-2 bg-white rounded border h-100">
                                                     {q.structured_answer ? (
                                                         <div>
+                                                            {(() => {
+                                                                try {
+                                                                    const parsed = typeof q.structured_answer === 'string' ? JSON.parse(q.structured_answer) : q.structured_answer;
+                                                                    if (parsed && (parsed.type === 'DFA' || parsed.type === 'NFA' || parsed.states || parsed.transitions)) {
+                                                                        return (
+                                                                            <div className="mb-2">
+                                                                                <small className="text-primary fw-bold d-block mb-1">Visual Automata Diagram:</small>
+                                                                                <AutomataDiagramViewer automataData={parsed} height={200} readOnly={true} />
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                } catch (err) {}
+                                                                return null;
+                                                            })()}
                                                             <small className="text-muted d-block mb-1">Structured Model Data:</small>
                                                             <pre className="small m-0 text-dark bg-light p-2 rounded" style={{maxHeight:'150px', overflow:'auto'}}>{q.structured_answer}</pre>
                                                         </div>
@@ -329,11 +347,18 @@ const TeacherDashboard = () => {
                                                 <div className="p-2 bg-white rounded border border-success h-100">{q.reference_answer}</div>
                                             </div>
                                         </div>
+
+                                        {q.rubric && (
+                                            <div className="mb-3 p-2 bg-white rounded border">
+                                                <span className="fw-bold small text-muted d-block mb-1">Evaluation Rubric:</span>
+                                                <pre className="small m-0 text-dark font-monospace" style={{ whiteSpace: 'pre-wrap' }}>{q.rubric}</pre>
+                                            </div>
+                                        )}
                                         
                                         <div className={`bg-white p-3 rounded border mb-3 ${q.ai_confidence < 0.70 ? 'border-warning' : 'border-info'}`}>
                                             <div className="d-flex justify-content-between align-items-center mb-1">
                                                 <span className={`fw-bold small ${q.ai_confidence < 0.70 ? 'text-warning' : 'text-info'}`}>
-                                                    {q.ai_confidence < 0.70 ? ' Low Confidence AI Evaluation:' : ' AI Evaluation:'}
+                                                    {q.ai_confidence < 0.70 ? '⚠️ Low Confidence AI Evaluation:' : '✨ AI Evaluation:'}
                                                 </span>
                                                 {q.ai_confidence && (
                                                     <span className="badge bg-secondary" title="AI Confidence Score">
@@ -344,7 +369,7 @@ const TeacherDashboard = () => {
                                             <div className="d-flex justify-content-between align-items-start">
                                                 <p className="m-0 small text-secondary">{q.ai_explanation || <i>Not evaluated by AI yet</i>}</p>
                                                 <span className={`badge ms-3 fs-6 ${q.ai_confidence < 0.70 ? 'bg-warning text-dark' : 'bg-info'}`}>
-                                                    Suggested: {q.ai_suggested_marks !== null ? q.ai_suggested_marks : '?'} / 1.0
+                                                    Suggested: {q.ai_suggested_marks !== null ? q.ai_suggested_marks : '?'} / {q.max_marks || 1.0}
                                                 </span>
                                             </div>
                                         </div>
@@ -354,9 +379,9 @@ const TeacherDashboard = () => {
                                                 <label className="small fw-bold text-muted">Teacher Feedback (Optional)</label>
                                                 <input type="text" className="form-control form-control-sm" id={`feedback_${q.id}`} defaultValue={q.teacher_feedback || ''} placeholder="Add comments..." />
                                             </div>
-                                            <div style={{width: '100px'}}>
-                                                <label className="small fw-bold text-muted">Marks</label>
-                                                <input type="number" step="0.1" max="1" min="0" className="form-control form-control-sm" id={`marks_${q.id}`} defaultValue={q.marks_awarded !== null ? q.marks_awarded : (q.ai_suggested_marks || 0)} />
+                                            <div style={{width: '120px'}}>
+                                                <label className="small fw-bold text-muted">Marks (Max: {q.max_marks || 1.0})</label>
+                                                <input type="number" step="0.1" max={q.max_marks || 100} min="0" className="form-control form-control-sm" id={`marks_${q.id}`} defaultValue={q.marks_awarded !== null ? q.marks_awarded : (q.ai_suggested_marks || 0)} />
                                             </div>
                                             <button className="btn btn-sm btn-primary" onClick={() => {
                                                 const marks = document.getElementById(`marks_${q.id}`).value;
@@ -364,6 +389,17 @@ const TeacherDashboard = () => {
                                                 overrideGrade(q.id, marks, feedback);
                                             }}>Save Grade</button>
                                         </div>
+
+                                        {q.review_history && q.review_history.length > 0 && (
+                                            <div className="mt-3 p-2 bg-white rounded border small text-muted">
+                                                <span className="fw-bold d-block mb-1">Grade Audit History:</span>
+                                                {q.review_history.map((rev, rIdx) => (
+                                                    <div key={rIdx} className="ms-2">
+                                                        • {new Date(rev.created_at).toLocaleTimeString()}: Changed from {rev.original_marks} to {rev.new_marks} {rev.comments ? `— "${rev.comments}"` : ''}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="ms-2">
@@ -542,11 +578,15 @@ const TeacherDashboard = () => {
                                     <tr key={idx}>
                                         <td className="ps-4 fw-bold">{r.student_name}</td>
                                         
-                                        <td><span className="badge bg-primary rounded-pill px-3">{r.score} / {r.total_questions}</span></td>
+                                        <td>
+                                            <span className="badge bg-primary rounded-pill px-3">
+                                                {typeof r.score === 'number' ? Number(r.score.toFixed(2)) : r.score} / {typeof r.total_marks === 'number' && r.total_marks > 0 ? Number(r.total_marks.toFixed(2)) : r.total_questions}
+                                            </span>
+                                        </td>
                                         
                                         <td>
-                                            {((activeExam?.cutoff_type === 'marks' && r.score >= activeExam?.cutoff_value) || 
-                                              (activeExam?.cutoff_type !== 'marks' && r.score / r.total_marks >= (activeExam?.cutoff_value || 50) / 100)) 
+                                            {((activeExam?.cutoff_type === 'marks' && r.score >= (activeExam?.cutoff_value || 0)) || 
+                                              (activeExam?.cutoff_type !== 'marks' && ((r.total_marks ? (r.score / r.total_marks) : (r.score / (r.total_questions || 1)))) >= ((activeExam?.cutoff_value || 50) / 100))) 
                                                 ? <span className="text-success fw-bold">Pass ✨</span> 
                                                 : <span className="text-danger fw-bold">Fail <XCircle size={18} className="me-2" /></span>}
                                         </td>

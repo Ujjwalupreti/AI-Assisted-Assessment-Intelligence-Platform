@@ -6,6 +6,7 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 export default defineConfig({
   plugins: [react(), basicSsl()],
   server: {
+    https: true,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:5001', // Points to your Python Backend

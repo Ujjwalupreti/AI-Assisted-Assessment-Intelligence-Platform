@@ -28,5 +28,17 @@ export const examService = {
     previewAssembly: (payload) => apiFetch('/intelligence/assemble', {
         method: 'POST',
         body: JSON.stringify(payload)
+    }),
+
+    getKnowledgeDocuments: () => apiFetch('/intelligence/knowledge-documents'),
+
+    analyzeSyllabus: (payload) => apiFetch('/intelligence/analyze-syllabus', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    }),
+
+    generateSyllabusQuestions: (payload) => apiFetch('/intelligence/generate-syllabus-questions', {
+        method: 'POST',
+        body: JSON.stringify(payload)
     })
 };

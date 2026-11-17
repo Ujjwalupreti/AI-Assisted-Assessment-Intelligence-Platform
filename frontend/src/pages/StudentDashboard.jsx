@@ -52,7 +52,79 @@ const StudentDashboard = () => {
   const [viewMode, setViewMode] = useState('single'); 
   const [proctorStatus, setProctorStatus] = useState("safe");
   const [showAlert, setShowAlert] = useState(false);
+  const [onScreenWarning, setOnScreenWarning] = useState({ show: false, title: '', message: '', severity: 'warning', status: 'safe' });
+  const warningTimeoutRef = useRef(null);
   const questionRefs = useRef({});
+
+  // Audio warning beep helper
+  const playWarningBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(480, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch (err) {}
+  };
+
+  const triggerOnScreenWarning = (status, customMsg) => {
+    let title = "⚠️ AI PROCTOR WARNING";
+    let message = customMsg || "Suspicious behavior detected in exam session.";
+    let severity = "warning";
+
+    const s = String(status || '').toLowerCase();
+    if (s.includes('phone')) {
+      title = "🚨 UNAUTHORIZED DEVICE DETECTED";
+      message = customMsg || "Cell phone or mobile device detected in your exam space! Put it away immediately.";
+      severity = "danger";
+    } else if (s.includes('movement') || s.includes('fast') || s.includes('rapid')) {
+      title = "⚠️ RAPID / FAST MOVEMENT DETECTED";
+      message = customMsg || "Sudden or rapid movement detected! Please remain seated facing the camera calmly.";
+      severity = "warning";
+    } else if (s.includes('missing')) {
+      title = "⚠️ FACE NOT DETECTED";
+      message = customMsg || "Your face is not visible. Please face the webcam directly.";
+      severity = "warning";
+    } else if (s.includes('multiple')) {
+      title = "🚨 MULTIPLE PERSONS DETECTED";
+      message = customMsg || "Multiple faces detected! No other individuals are permitted in the exam space.";
+      severity = "danger";
+    } else if (s.includes('looking_away')) {
+      title = "⚠️ LOOKING AWAY FROM SCREEN";
+      message = customMsg || "You are looking away from the assessment screen. Please keep your eyes on the test.";
+      severity = "warning";
+    } else if (s.includes('book')) {
+      title = "⚠️ UNAUTHORIZED MATERIAL DETECTED";
+      message = customMsg || "Books or notes detected in view. Please clear your workspace.";
+      severity = "warning";
+    }
+
+    setOnScreenWarning({
+      show: true,
+      title,
+      message,
+      severity,
+      status: s
+    });
+
+    playWarningBeep();
+
+    if (warningTimeoutRef.current) {
+      clearTimeout(warningTimeoutRef.current);
+    }
+    warningTimeoutRef.current = setTimeout(() => {
+      setOnScreenWarning(prev => ({ ...prev, show: false }));
+    }, 5500);
+  };
 
   //  PHASE 2: ANTI-CHEATING STATE
   const [warnings, setWarnings] = useState(0);
@@ -689,14 +761,26 @@ const StudentDashboard = () => {
                 if (currentStatus === "missing") {
                     if (!faceMissingSinceRef.current) {
                         faceMissingSinceRef.current = Date.now();
-                    } else if (Date.now() - faceMissingSinceRef.current >= 3000) { 
+                    } else if (Date.now() - faceMissingSinceRef.current >= 2500) { 
                         setProctorStatus("missing");
                         setShowAlert(true);
+                        triggerOnScreenWarning("missing", data.warning_message);
                     }
-                } else {
+                } else if (currentStatus && currentStatus !== "safe") {
                     faceMissingSinceRef.current = null; 
                     setProctorStatus(currentStatus);
-                    setShowAlert(currentStatus !== "safe");
+                    setShowAlert(true);
+                    triggerOnScreenWarning(currentStatus, data.warning_message);
+                } else {
+                    faceMissingSinceRef.current = null; 
+                    setProctorStatus("safe");
+                    setShowAlert(false);
+                }
+
+                // If explicit event returned from temporal aggregator, also trigger
+                if (data.events && data.events.length > 0) {
+                    const evt = data.events[0];
+                    triggerOnScreenWarning(evt.type, data.warning_message);
                 }
               }
             }
@@ -829,10 +913,10 @@ const StudentDashboard = () => {
                         </div>
                         <div className="overflow-auto flex-grow-1 pe-2">
                             {reviewData.questions.map((q, idx) => (
-                                <div key={idx} className="card border-0 shadow-sm mb-3">
+                                <div key={idx} className="card border shadow-sm mb-3">
                                     <div className="card-body">
                                         <div className="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 className="fw-bold m-0">Q{idx+1}: {q.text}</h6>
+                                            <h6 className="fw-bold m-0 text-dark">Q{idx+1}: {q.question_text || q.text}</h6>
                                             <span className={`badge ${q.is_subjective ? 'bg-info' : (q.is_correct ? 'bg-success' : 'bg-danger')}`}>
                                                 {q.is_subjective ? 'Subjective' : (q.is_correct ? 'Correct' : 'Incorrect')}
                                             </span>
@@ -841,45 +925,87 @@ const StudentDashboard = () => {
                                         {q.is_subjective ? (
                                             <div className="bg-light p-3 rounded border">
                                                 <div className="mb-2">
-                                                    <span className="text-muted fw-bold d-block small mb-1">Your Answer:</span>
-                                                    <p className="m-0 bg-white p-2 border rounded">{q.student_answer || <span className="text-muted italic">Not answered</span>}</p>
+                                                    <span className="text-muted fw-bold d-block small mb-1">Your Submitted Answer:</span>
+                                                    <div className="m-0 bg-white p-2 border rounded font-monospace small" style={{ whiteSpace: 'pre-wrap' }}>
+                                                        {q.student_answer || <span className="text-muted fst-italic">Not answered</span>}
+                                                    </div>
                                                 </div>
                                                 <div className="mb-2">
-                                                    <span className="text-success fw-bold d-block small mb-1">Reference Answer:</span>
-                                                    <p className="m-0 bg-white p-2 border rounded border-success">{q.reference_answer}</p>
+                                                    <span className="text-success fw-bold d-block small mb-1">Reference / Model Solution:</span>
+                                                    <div className="m-0 bg-white p-2 border border-success rounded text-success fw-medium small" style={{ whiteSpace: 'pre-wrap' }}>
+                                                        {q.reference_answer || 'Reference solution will be provided after teacher review.'}
+                                                    </div>
                                                 </div>
                                                 <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                                                    <span className="fw-bold text-primary">Score: {q.marks_awarded !== null ? q.marks_awarded : 'Pending'} / 1.0</span>
-                                                    {q.ai_explanation && <span className="badge bg-secondary cursor-pointer" title={q.ai_explanation}>AI Graded ℹ️</span>}
+                                                    <span className="fw-bold text-primary">
+                                                        Marks Awarded: {q.marks_awarded !== null && q.marks_awarded !== undefined ? `${q.marks_awarded}` : 'Pending Evaluation'}
+                                                    </span>
+                                                    {q.ai_explanation && (
+                                                        <span className="badge bg-secondary cursor-pointer" title={q.ai_explanation}>
+                                                            AI Evaluated ℹ️
+                                                        </span>
+                                                    )}
                                                 </div>
+                                                {q.ai_explanation && (
+                                                    <div className="mt-2 p-2 bg-white border rounded small text-secondary">
+                                                        <strong>AI Feedback:</strong> {q.ai_explanation}
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
-                                            <div className="ms-2">
+                                            <div className="ms-1 mt-2">
                                                 {['A', 'B', 'C', 'D'].map(opt => {
-                                                    const hashedOpt = hashText(String(opt).trim().toUpperCase());
-                                                    let isCorrectAns = q.correct_option === hashedOpt;
-                                                    let isStudentChoice = q.student_answer === hashedOpt;
+                                                    const optUpper = String(opt).trim().toUpperCase();
+                                                    const hashedOpt = hashText(optUpper);
+                                                    const optText = q.options ? String(q.options[opt] || '').trim() : '';
+                                                    const hashedOptText = optText ? hashText(optText) : '';
+
+                                                    // Normalize correct_option
+                                                    const correctVal = q.correct_option ? String(q.correct_option).trim() : '';
+                                                    const isCorrectAns = Boolean(
+                                                        correctVal && (
+                                                            correctVal.toUpperCase() === optUpper ||
+                                                            correctVal === hashedOpt ||
+                                                            (optText && (correctVal.toLowerCase() === optText.toLowerCase() || correctVal === hashedOptText))
+                                                        )
+                                                    );
+
+                                                    // Normalize student answer
+                                                    const studentVal = q.student_answer ? String(q.student_answer).trim() : '';
+                                                    const isStudentChoice = Boolean(
+                                                        studentVal && (
+                                                            studentVal.toUpperCase() === optUpper ||
+                                                            studentVal === hashedOpt ||
+                                                            (optText && (studentVal.toLowerCase() === optText.toLowerCase() || studentVal === hashedOptText))
+                                                        )
+                                                    );
                                                     
-                                                    let optClass = "text-muted";
-                                                    let icon = "";
+                                                    let itemClass = "text-muted p-2 rounded border bg-light";
+                                                    let badgeEl = null;
                                                     
-                                                    if (isCorrectAns) {
-                                                        optClass = "text-success fw-bold bg-success bg-opacity-10 rounded p-1";
-                                                        icon = "";
-                                                    } else if (isStudentChoice && !isCorrectAns) {
-                                                        optClass = "text-danger fw-bold bg-danger bg-opacity-10 rounded p-1";
-                                                        icon = " (Your Choice)";
+                                                    if (isCorrectAns && isStudentChoice) {
+                                                        itemClass = "bg-success bg-opacity-10 text-success fw-bold border border-success p-2 rounded";
+                                                        badgeEl = <span className="badge bg-success ms-2">✓ Your Choice (Correct)</span>;
+                                                    } else if (isCorrectAns) {
+                                                        itemClass = "bg-success bg-opacity-10 text-success fw-bold border border-success p-2 rounded";
+                                                        badgeEl = <span className="badge bg-success ms-2">✓ Correct Answer</span>;
                                                     } else if (isStudentChoice) {
-                                                        icon = "(Your Choice)";
+                                                        itemClass = "bg-danger bg-opacity-10 text-danger fw-bold border border-danger p-2 rounded";
+                                                        badgeEl = <span className="badge bg-danger ms-2">✗ Your Choice (Incorrect)</span>;
                                                     }
                                                     
                                                     return (
-                                                        <div key={opt} className={`mb-1 ${optClass}`}>
-                                                            {opt}: {q.options[opt]} {icon}
+                                                        <div key={opt} className={`mb-2 d-flex justify-content-between align-items-center ${itemClass}`}>
+                                                            <span><strong>{opt}:</strong> {q.options ? q.options[opt] : ''}</span>
+                                                            {badgeEl}
                                                         </div>
                                                     );
                                                 })}
-                                                {!q.student_answer && <div className="text-warning fw-bold mt-2"> Not answered</div>}
+                                                {!q.student_answer && (
+                                                    <div className="alert alert-warning py-1 px-3 small mt-2 mb-0 d-flex align-items-center">
+                                                        <span>⚠️ <strong>Not answered.</strong> Correct Answer: <strong>Option {q.correct_option || 'N/A'}</strong> {q.options && q.correct_option && q.options[q.correct_option] ? `(${q.options[q.correct_option]})` : ''}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -1029,14 +1155,51 @@ const StudentDashboard = () => {
           <button className="btn btn-dark px-4 fw-bold rounded-pill" onClick={() => submitExam(false)}>Finish & Submit</button>
         </div>
 
-        {showAlert && (
-          <div className="bg-danger text-white text-center fw-bold py-2 small animate__animated animate__headShake">
-               AI WARNING: { proctorStatus === "missing" ? "Face Not Detected!" : proctorStatus === "multiple" ? "Multiple Faces Detected!" : proctorStatus === "looking_away" ? "You are looking away from the screen!" : proctorStatus === "phone_detected" ? "Cell Phone Detected in Frame!" : proctorStatus === "book_detected" ? "Book or Notes Detected!" : "Suspicious Activity!" }
-          </div>
-        )}
-        {showAudioAlert && (
-          <div className="bg-danger text-white text-center fw-bold py-2 small animate__animated animate__headShake"> AUDIO WARNING: Loud noise or talking detected in your environment!</div>
-        )}
+        {/* 🚨 LEFT-HAND SIDE PROCTORING NOTIFICATIONS (NO SCREEN SHAKE) */}
+        <div 
+          className="position-fixed d-flex flex-column gap-2" 
+          style={{ bottom: '24px', left: '24px', zIndex: 99999, maxWidth: '400px', pointerEvents: 'none' }}
+        >
+          {onScreenWarning.show && (
+            <div 
+              className={`shadow-lg rounded-3 p-3 text-white border-0 d-flex align-items-start gap-2 ${
+                onScreenWarning.severity === 'danger' ? 'bg-danger' : 'bg-dark'
+              }`}
+              style={{ pointerEvents: 'auto', borderLeft: '5px solid #ffc107', animation: 'fadeIn 0.2s ease-in' }}
+            >
+              <span className="fs-4 mt-0">{onScreenWarning.severity === 'danger' ? '🚨' : '⚠️'}</span>
+              <div className="flex-grow-1">
+                <div className="fw-bold small text-uppercase tracking-wider">{onScreenWarning.title}</div>
+                <div className="small opacity-90 mt-1">{onScreenWarning.message}</div>
+              </div>
+              <button 
+                type="button" 
+                className="btn-close btn-close-white p-1 ms-1" 
+                onClick={() => setOnScreenWarning(prev => ({ ...prev, show: false }))}
+                title="Dismiss"
+              ></button>
+            </div>
+          )}
+
+          {showAudioAlert && (
+            <div 
+              className="shadow-lg rounded-3 p-3 text-white bg-danger border-0 d-flex align-items-start gap-2"
+              style={{ pointerEvents: 'auto', borderLeft: '5px solid #ff4d4f', animation: 'fadeIn 0.2s ease-in' }}
+            >
+              <span className="fs-4 mt-0">🔊</span>
+              <div className="flex-grow-1">
+                <div className="fw-bold small text-uppercase">Audio Silence Warning</div>
+                <div className="small opacity-90 mt-1">Loud noise or talking detected in your environment! Please maintain strict exam silence.</div>
+              </div>
+              <button 
+                type="button" 
+                className="btn-close btn-close-white p-1 ms-1" 
+                onClick={() => setShowAudioAlert(false)}
+                title="Dismiss"
+              ></button>
+            </div>
+          )}
+        </div>
 
         <div className="d-flex flex-grow-1 overflow-hidden">
           <div className="flex-grow-1 p-5 overflow-auto d-flex justify-content-center">
@@ -1050,21 +1213,22 @@ const StudentDashboard = () => {
                       </div>
 
                       {viewMode === 'single' && (
-                          <div className="card shadow-sm border-0 p-5 mb-3 bg-white question-card">
-                              <div className="d-flex justify-content-between mb-4 border-bottom pb-3">
+                          <div className="card shadow-sm border-0 p-4 p-md-5 mb-3 bg-white question-card">
+                              <div className="d-flex justify-content-between mb-3 border-bottom pb-2">
                                   <h5 className="text-secondary m-0">Question {currentQIndex+1} <span className="text-muted small">/ {questions.length}</span></h5>
                                   <span className="badge bg-light text-dark border">
                                       {currentQ.is_subjective ? 'Subjective' : 'Single Choice'}
                                   </span>
                               </div>
-                              <p className="lead fw-bold text-dark mb-5" style={{lineHeight: '1.6'}}>{currentQ.text}</p>
+                              <p className="lead fw-bold text-dark mb-3" style={{lineHeight: '1.5'}}>{currentQ.text}</p>
                               
                               {currentQ.is_subjective ? (
                                   <MultiFormatAnswerInput 
+                                      key={currentQ.id}
                                       question={currentQ}
                                       examId={activeExam.id}
                                       initialAnswer={answers[currentQ.id]}
-                                      onAnswerChange={(qId, val) => handleOptionSelect(qId, val)}
+                                      onAnswerChange={(payload) => handleOptionSelect(currentQ.id, payload)}
                                       apiBaseUrl={API_BASE_URL}
                                       getHeaders={getHeaders}
                                   />
@@ -1092,10 +1256,11 @@ const StudentDashboard = () => {
                                       
                                       {q.is_subjective ? (
                                           <MultiFormatAnswerInput 
+                                              key={q.id}
                                               question={q}
                                               examId={activeExam.id}
                                               initialAnswer={answers[q.id]}
-                                              onAnswerChange={(qId, val) => handleOptionSelect(qId, val)}
+                                              onAnswerChange={(payload) => handleOptionSelect(q.id, payload)}
                                               apiBaseUrl={API_BASE_URL}
                                               getHeaders={getHeaders}
                                           />
@@ -1145,8 +1310,25 @@ const StudentDashboard = () => {
                    </div>
                </div>
                <div className="p-3 border-top bg-light text-center">
-                  <small className="d-block mb-2 text-muted fw-bold">Live Proctoring Active  </small>
-                  <div className="rounded overflow-hidden border mx-auto shadow-sm proctor-container bg-dark" style={{ height: '120px' }}>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                      <small className="text-muted fw-bold">Live AI Proctoring</small>
+                      {proctorStatus === 'safe' ? (
+                          <span className="badge bg-success" style={{ fontSize: '10px' }}>● Secure</span>
+                      ) : proctorStatus === 'phone_detected' ? (
+                          <span className="badge bg-danger animate__animated animate__flash" style={{ fontSize: '10px' }}>🚨 Phone Detected</span>
+                      ) : proctorStatus === 'fast_movement' ? (
+                          <span className="badge bg-warning text-dark animate__animated animate__pulse" style={{ fontSize: '10px' }}>⚠️ Fast Motion</span>
+                      ) : proctorStatus === 'missing' ? (
+                          <span className="badge bg-danger" style={{ fontSize: '10px' }}>⚠️ Face Missing</span>
+                      ) : proctorStatus === 'multiple' ? (
+                          <span className="badge bg-danger" style={{ fontSize: '10px' }}>🚨 Multi-Face</span>
+                      ) : proctorStatus === 'looking_away' ? (
+                          <span className="badge bg-warning text-dark" style={{ fontSize: '10px' }}>👀 Looking Away</span>
+                      ) : (
+                          <span className="badge bg-secondary" style={{ fontSize: '10px' }}>{proctorStatus}</span>
+                      )}
+                  </div>
+                  <div className="rounded overflow-hidden border mx-auto shadow-sm proctor-container bg-dark position-relative" style={{ height: '120px' }}>
                       <Webcam audio={false} ref={proctorWebcamRef} screenshotFormat="image/jpeg" mirrored={true} style={{ width: '100%', height: '100%', objectFit: 'cover' }} videoConstraints={{ facingMode: "user" }} />
                   </div>
                </div>

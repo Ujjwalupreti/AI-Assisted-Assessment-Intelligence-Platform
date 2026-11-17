@@ -30,6 +30,7 @@ const ManageExam = ({ examId, activeExam, onChangeView, togglePublish }) => {
                     original_text: q.text,
                     text: activeExam?.has_password ? decryptText(q.text, bulkPassword) : q.text,
                     reference_answer: q.is_subjective ? (activeExam?.has_password && q.reference_answer ? decryptText(q.reference_answer, bulkPassword) : q.reference_answer) : '',
+                    rubric: q.is_subjective ? (activeExam?.has_password && q.rubric ? decryptText(q.rubric, bulkPassword) : q.rubric) : '',
                     options: {
                         A: activeExam?.has_password ? decryptText(q.option_a, bulkPassword) : q.option_a,
                         B: activeExam?.has_password ? decryptText(q.option_b, bulkPassword) : q.option_b,
@@ -64,27 +65,29 @@ const ManageExam = ({ examId, activeExam, onChangeView, togglePublish }) => {
                     const encryptedQuestions = results.data.map(row => {
                         const qTypeRaw = String(row.question_type || '').toUpperCase();
                         const isSubjLegacy = (row.is_subjective === 'true' || row.is_subjective === '1');
-                        let isSubj = (qTypeRaw === 'SUBJECTIVE' || isSubjLegacy);
+                        let isSubj = (qTypeRaw !== 'MCQ' || isSubjLegacy);
                         
                         // Infer subjective if question_type is missing but it has a reference answer and no MCQ options
                         if (!isSubj && row.reference_answer && !row.option_a && !row.correct_option) {
                             isSubj = true;
                         }
                         
-                        const qType = isSubj ? 'SUBJECTIVE' : 'MCQ';
+                        const qType = isSubj ? (qTypeRaw && qTypeRaw !== 'MCQ' ? qTypeRaw : 'SHORT_ANSWER') : 'MCQ';
 
                         return {
                             text: activeExam?.has_password ? encryptText(row.question, bulkPassword) : row.question,
-                            option_a: activeExam?.has_password ? encryptText(row.option_a, bulkPassword) : row.option_a,
-                            option_b: activeExam?.has_password ? encryptText(row.option_b, bulkPassword) : row.option_b,
-                            option_c: activeExam?.has_password ? encryptText(row.option_c, bulkPassword) : row.option_c,
-                            option_d: activeExam?.has_password ? encryptText(row.option_d, bulkPassword) : row.option_d,
-                            correct_option_hash: hashText(String(row.correct_option).trim().toUpperCase()),
+                            option_a: (!isSubj && activeExam?.has_password) ? encryptText(row.option_a, bulkPassword) : row.option_a,
+                            option_b: (!isSubj && activeExam?.has_password) ? encryptText(row.option_b, bulkPassword) : row.option_b,
+                            option_c: (!isSubj && activeExam?.has_password) ? encryptText(row.option_c, bulkPassword) : row.option_c,
+                            option_d: (!isSubj && activeExam?.has_password) ? encryptText(row.option_d, bulkPassword) : row.option_d,
+                            correct_option_hash: !isSubj ? hashText(String(row.correct_option).trim().toUpperCase()) : null,
                             reference_answer: isSubj ? 
                                 (activeExam?.has_password ? encryptText(row.reference_answer || '', bulkPassword) : (row.reference_answer || '')) : null,
+                            rubric: isSubj && row.rubric ?
+                                (activeExam?.has_password ? encryptText(row.rubric, bulkPassword) : row.rubric) : null,
                             is_subjective: isSubj,
                             question_type: qType,
-                            max_marks: parseFloat(row.marks) || 1.0,
+                            max_marks: parseFloat(row.marks) || (isSubj ? 5.0 : 1.0),
                             topic: row.topic,
                             difficulty: row.difficulty,
                             bloom_level: row.bloom_level
@@ -137,6 +140,20 @@ const ManageExam = ({ examId, activeExam, onChangeView, togglePublish }) => {
         }
         setEditingQuestion(q);
         setActiveMode('manual');
+    };
+
+    const formatTopicTag = (topic) => {
+        if (!topic) return '';
+        let t = topic.replace(/^[•\*\-\d\.\)]+\s*/, '')
+                     .replace(/^(?:unit|module|chapter)\s*[\divx\.\-\:\)]+\s*/i, '')
+                     .replace(/^(?:introduction to|overview of|basics of|fundamentals of|principles of)\s+/i, '');
+        t = t.split(/[\.\;\:\(\)\[\]\–\—]/)[0].trim();
+        if (t.includes(',')) t = t.split(',')[0].trim();
+        const words = t.split(/\s+/).filter(Boolean).slice(0, 4);
+        while (words.length > 0 && ['AND', '&', 'OR', 'WITH', 'FOR', 'IN', 'OF', 'TO'].includes(words[words.length - 1].toUpperCase())) {
+            words.pop();
+        }
+        return words.join(' ').toUpperCase() || 'CORE TOPIC';
     };
 
     return (
@@ -257,7 +274,9 @@ const ManageExam = ({ examId, activeExam, onChangeView, togglePublish }) => {
                                     </div>
                                     <p className="mb-2 fw-semibold" style={{ fontSize: '0.9rem' }}>{q.text}</p>
                                     <div className="d-flex flex-wrap gap-2">
-                                        {q.topic && <span className="badge bg-secondary opacity-75">{q.topic}</span>}
+                                        <span className="badge bg-info text-dark">{q.question_type || (q.is_subjective ? 'SUBJECTIVE' : 'MCQ')}</span>
+                                        <span className="badge bg-primary">{q.max_marks || 1} mark(s)</span>
+                                        {q.topic && <span className="badge bg-secondary opacity-75">{formatTopicTag(q.topic)}</span>}
                                         {q.difficulty && <span className="badge bg-secondary opacity-75">{q.difficulty}</span>}
                                         {q.bloom_level && <span className="badge bg-secondary opacity-75">{q.bloom_level}</span>}
                                     </div>
