@@ -6,7 +6,7 @@ from database import get_db
 from auth_middleware import get_current_user, get_teacher_user
 from datetime import datetime
 import jwt
-from models import User, Exam, Result, Question, ExamAttempt, Answer, ProctoringEvent, AnswerVersion, AnswerIntegrityEvent
+from models import User, Exam, Result, Question, ExamAttempt, Answer, ProctoringEvent, AnswerVersion, AnswerIntegrityEvent, EvaluationReview
 import os
 import base64
 import uuid
@@ -42,7 +42,6 @@ face_cascade = cv2.CascadeClassifier(
 )
 # ==========================================
 
-auth_bp = APIRouter()
 exam_bp = APIRouter()
 
 # --- 📸 HELPER: SAVE BASE64 IMAGES LOCALLY ---
@@ -93,27 +92,6 @@ def delete_result(result_id, db: Session = Depends(get_db), current_user: User =
     except Exception as e:
         print(f"DELETE RESULT ERROR: {e}")
         return JSONResponse(status_code=500, content={"message": "Error deleting result"})
-
-
-# --- LOGIN (JWT Token) ---
-@auth_bp.post('/login')
-def login(db: Session = Depends(get_db), data: dict = Body(None), request: Request = None):
-    try:
-        data = data
-        username = data.get('username', '').strip().lower()
-        user = db.execute(select(User).filter_by(username=username)).scalar_one_or_none()
-
-        if user and user.check_password(data.get('password')):
-            token = jwt.encode(
-                {'user_id': user.id, 'role': user.role},
-                getattr(Config, 'SECRET_KEY', 'my_precious_secret'),
-                algorithm="HS256"
-            )
-            return JSONResponse(status_code=200, content={"token": token, "user": {"id": user.id, "username": user.username, "role": user.role}})
-        return JSONResponse(status_code=401, content={"message": 'Invalid credentials'})
-    except Exception as e:
-        print(f"LOGIN ERROR: {e}")
-        return JSONResponse(status_code=500, content={"message": "Login failed"})
 
 
 # --- CREATE EXAM ---
@@ -203,6 +181,37 @@ def create_exam(db: Session = Depends(get_db), current_user: User = Depends(get_
                         source='AUTO_ASSEMBLED'
                     )
                     db.add(new_q)
+            db.commit()
+
+        # Link / Create newly generated questions from AI Syllabus Automation
+        generated_questions = data.get('generated_questions', [])
+        if generated_questions:
+            for gq in generated_questions:
+                is_sub = bool(gq.get('is_subjective', False))
+                q_type = gq.get('question_type', 'SHORT_ANSWER' if is_sub else 'MCQ')
+                new_q = Question(
+                    exam_id=new_exam.id,
+                    text=gq.get('text', ''),
+                    option_a=gq.get('option_a'),
+                    option_b=gq.get('option_b'),
+                    option_c=gq.get('option_c'),
+                    option_d=gq.get('option_d'),
+                    correct_option=gq.get('correct_option'),
+                    topic=gq.get('topic', 'General'),
+                    difficulty=gq.get('difficulty', 'Medium'),
+                    bloom_level=gq.get('bloom_level', 'Apply'),
+                    ai_quality_score=0.92,
+                    is_subjective=is_sub,
+                    reference_answer=gq.get('reference_answer') or gq.get('expected_answer', ''),
+                    rubric=gq.get('rubric', ''),
+                    max_marks=float(gq.get('max_marks', 1.0)),
+                    subject=gq.get('subject', 'General'),
+                    question_type=q_type,
+                    created_by=current_user.id,
+                    status='ACTIVE',
+                    source='AI_SYLLABUS_GENERATED'
+                )
+                db.add(new_q)
             db.commit()
 
         return JSONResponse(status_code=201, content=dict(message='Exam created!', exam_id=new_exam.id))
@@ -510,9 +519,10 @@ def start_exam(exam_id, db: Session = Depends(get_db), current_user: User = Depe
         # Handle retakes by deleting existing attempts (for MVP purposes)
         existing_attempts = db.query(ExamAttempt).filter_by(exam_id=exam_id, student_id=user_id).all()
         for old_attempt in existing_attempts:
-            from models import Answer, ProctoringEvent
             db.query(Answer).filter_by(attempt_id=old_attempt.id).delete(synchronize_session=False)
             db.query(ProctoringEvent).filter_by(attempt_id=old_attempt.id).delete(synchronize_session=False)
+            db.query(AnswerIntegrityEvent).filter_by(attempt_id=old_attempt.id).delete(synchronize_session=False)
+            db.query(AnswerVersion).filter_by(attempt_id=old_attempt.id).delete(synchronize_session=False)
             db.delete(old_attempt)
         if existing_attempts:
             db.commit()
@@ -520,7 +530,6 @@ def start_exam(exam_id, db: Session = Depends(get_db), current_user: User = Depe
         assigned_questions_json = None
         if getattr(exam, 'pooling_enabled', False) or getattr(exam, 'slotting_enabled', False):
             import json, random
-            from models import Question
             all_q = db.query(Question).filter_by(exam_id=exam_id, is_archived=False).all()
             
             if getattr(exam, 'pooling_enabled', False) and exam.questions_per_student and exam.questions_per_student < len(all_q):
@@ -538,6 +547,11 @@ def start_exam(exam_id, db: Session = Depends(get_db), current_user: User = Depe
             assigned_questions_json=assigned_questions_json
         )
         db.add(attempt)
+        db.commit()
+        
+        # Ensure fresh attempt isolation
+        db.query(ProctoringEvent).filter_by(attempt_id=attempt.id).delete(synchronize_session=False)
+        db.query(AnswerIntegrityEvent).filter_by(attempt_id=attempt.id).delete(synchronize_session=False)
         db.commit()
         return JSONResponse(status_code=201, content=dict(message="Exam started", attempt_id=attempt.id))
     except Exception as e:
@@ -1058,18 +1072,22 @@ def get_exam_review(exam_id, db: Session = Depends(get_db), current_user: User =
         for q in questions:
             ans = answer_map.get(q.id)
             review_data.append({
+                'id': q.id,
                 'question_text': q.text,
+                'text': q.text,
                 'options': {
                     'A': q.option_a,
                     'B': q.option_b,
                     'C': q.option_c,
                     'D': q.option_d,
                 },
-                'correct_option': q.correct_option if (current_user.role == 'teacher') else None,
-                'is_subjective': q.is_subjective,
+                'correct_option': q.correct_option,
+                'reference_answer': getattr(q, 'reference_answer', '') or getattr(q, 'expected_answer', '') or '',
+                'is_subjective': bool(q.is_subjective),
                 'student_answer': ans.selected_option if ans else None,
-                'is_correct': ans.is_correct if ans else False,
-                'marks_awarded': ans.marks_awarded if ans else 0.0
+                'is_correct': bool(ans.is_correct) if ans else False,
+                'marks_awarded': ans.marks_awarded if ans else 0.0,
+                'ai_explanation': getattr(ans, 'ai_feedback', None) if ans else None
             })
             
         # Fetch the Result for penalties
@@ -1115,15 +1133,27 @@ def get_student_exam_review_for_teacher(exam_id, student_id, db: Session = Depen
         review_data = []
         for q in questions:
             ans = answer_map.get(q.id)
+            reviews = db.query(EvaluationReview).filter_by(answer_id=ans.id).order_by(EvaluationReview.created_at.asc()).all() if ans else []
+            review_history = [{
+                'id': r.id,
+                'teacher_id': r.teacher_id,
+                'original_marks': r.original_marks,
+                'new_marks': r.new_marks,
+                'comments': r.comments,
+                'created_at': r.created_at.isoformat() if r.created_at else None
+            } for r in reviews]
+            
             review_data.append({
                 'id': ans.id if ans else None,
                 'question_id': q.id,
                 'question_type': q.question_type or ('SUBJECTIVE' if q.is_subjective else 'MCQ'),
                 'question_text': q.text,
                 'options': {'A': q.option_a, 'B': q.option_b, 'C': q.option_c, 'D': q.option_d},
-                'correct_option': q.correct_option if (current_user.role == 'teacher') else None,
+                'correct_option': q.correct_option,
                 'is_subjective': q.is_subjective,
                 'reference_answer': q.reference_answer,
+                'rubric': q.rubric,
+                'max_marks': q.max_marks or 1.0,
                 'student_answer': ans.answer_text if q.is_subjective else (ans.selected_option if ans else None),
                 'answer_type': ans.answer_type if ans else 'TEXT',
                 'structured_answer': ans.structured_answer if ans else None,
@@ -1137,7 +1167,8 @@ def get_student_exam_review_for_teacher(exam_id, student_id, db: Session = Depen
                 'ai_confidence': ans.ai_confidence if ans else None,
                 'ai_model_name': ans.ai_model_name if ans else None,
                 'review_status': ans.review_status if ans else 'PENDING',
-                'teacher_feedback': ans.teacher_feedback if ans else None
+                'teacher_feedback': ans.teacher_feedback if ans else None,
+                'review_history': review_history
             })
             
         result = db.execute(select(Result).filter_by(student_id=student_id, exam_id=exam_id).order_by(Result.id.desc())).scalars().first()
@@ -1170,7 +1201,7 @@ def get_student_exam_review_for_teacher(exam_id, student_id, db: Session = Depen
 # ==========================================================
 # 🚨 BULLETPROOF AI PROCTORING ENDPOINT (DEVICE-INDEPENDENT)
 # ==========================================================
-from ai.proctoring.proctoring_core import process_frame_detections
+from ai.proctoring.proctoring_core import process_frame_detections, get_attempt_state
 
 @exam_bp.post('/analyze_frame')
 def analyze_frame(db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(None), request: Request = None):
@@ -1218,10 +1249,54 @@ def analyze_frame(db: Session = Depends(get_db), current_user: User = Depends(ge
             if face_center_x < center_x_min or face_center_x > center_x_max:
                 looking_away = True
 
+        # 🏃 FAST MOVEMENT DETECTION (Displacement Velocity & Optical Differencing)
+        fast_movement = False
+        state = get_attempt_state(attempt_id)
+        current_time = time.time()
+        
+        if len(faces) > 0:
+            fx, fy, fw, fh = faces[0]
+            fcx = fx + (fw // 2)
+            fcy = fy + (fh // 2)
+            prev_box = state.get("prev_face_box")
+            prev_time = state.get("prev_face_time", current_time)
+            
+            if prev_box is not None:
+                p_fcx, p_fcy, p_fw, p_fh = prev_box
+                dt = max(0.1, current_time - prev_time)
+                dist = np.hypot(fcx - p_fcx, fcy - p_fcy)
+                displacement_ratio = dist / max(1.0, float(p_fw))
+                velocity = dist / dt  # pixels per second
+                
+                # Rapid head or upper-body displacement
+                if dt <= 3.0 and (displacement_ratio > 0.75 or velocity > 135.0):
+                    fast_movement = True
+                    
+            state["prev_face_box"] = (fcx, fcy, fw, fh)
+            state["prev_face_time"] = current_time
+        else:
+            prev_box = state.get("prev_face_box")
+            prev_time = state.get("prev_face_time", current_time)
+            if prev_box is not None and (current_time - prev_time) <= 2.0:
+                fast_movement = True
+            state["prev_face_box"] = None
+            state["prev_face_time"] = current_time
+
+        # Optical frame differencing on small grayscale image
+        small_gray = cv2.resize(gray, (160, 120))
+        prev_gray = state.get("prev_frame_gray")
+        if prev_gray is not None:
+            diff = cv2.absdiff(small_gray, prev_gray)
+            mean_diff = float(np.mean(diff))
+            if mean_diff > 30.0:  # significant rapid motion
+                fast_movement = True
+        state["prev_frame_gray"] = small_gray
+
         # 📱 YOLO OBJECT DETECTION (Classes: 63=laptop, 67=cell phone, 73=book)
         objects = []
         if model:
-            results = model.predict(high_res_img, classes=[63, 67, 73], conf=0.35, verbose=False)
+            # Lower confidence to 0.22 for highly sensitive mobile phone detection
+            results = model.predict(high_res_img, classes=[63, 67, 73], conf=0.22, verbose=False)
             for r in results:
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
@@ -1236,6 +1311,7 @@ def analyze_frame(db: Session = Depends(get_db), current_user: User = Depends(ge
         detections = {
             "face_count": len(faces),
             "looking_away": looking_away,
+            "fast_movement": fast_movement,
             "objects": objects
         }
 
@@ -1251,18 +1327,33 @@ def analyze_frame(db: Session = Depends(get_db), current_user: User = Depends(ge
                 "confidence": e.confidence
             })
 
-        # Backward compatibility for status
+        # Priority status mapping
         current_status = "safe"
-        if len(faces) == 0: current_status = "missing"
-        elif len(faces) > 1: current_status = "multiple"
-        elif looking_away: current_status = "looking_away"
-        elif any(obj['class'] == 'phone' for obj in objects): current_status = "phone_detected"
-        elif any(obj['class'] == 'book' for obj in objects): current_status = "book_detected"
+        warning_message = None
+        if any(obj['class'] == 'phone' for obj in objects):
+            current_status = "phone_detected"
+            warning_message = "Cell Phone Detected in Exam View! Please put it away immediately."
+        elif fast_movement:
+            current_status = "fast_movement"
+            warning_message = "Rapid or Erratic Movement Detected! Please stay calmly seated facing the screen."
+        elif len(faces) == 0:
+            current_status = "missing"
+            warning_message = "Face Not Detected! Please face the webcam directly."
+        elif len(faces) > 1:
+            current_status = "multiple"
+            warning_message = "Multiple Faces Detected in View! Only the registered examinee is permitted."
+        elif looking_away:
+            current_status = "looking_away"
+            warning_message = "You are looking away from the exam screen. Focus on your test."
+        elif any(obj['class'] == 'book' for obj in objects):
+            current_status = "book_detected"
+            warning_message = "Notes or Book Detected! Please clear your workspace."
 
         return JSONResponse(status_code=200, content={
             "status": current_status,
             "events": events_json,
-            "detections": detections
+            "detections": detections,
+            "warning_message": warning_message
         })
         
     except Exception as e:
@@ -1343,7 +1434,10 @@ def evaluate_exam_subjective_answers(exam_id, db: Session = Depends(get_db), cur
                     file_reference=getattr(ans, 'file_reference', None)
                 )
                 
-                ans.ai_suggested_marks = evaluation.get("suggested_marks", 0.0)
+                q_max = float(question.max_marks or 1.0)
+                suggested_val = float(evaluation.get("suggested_marks", 0.0) or 0.0)
+                clamped_suggested = round(max(0.0, min(suggested_val, q_max)), 2)
+                ans.ai_suggested_marks = clamped_suggested
                 ans.ai_explanation = evaluation.get("explanation", "")
                 
                 # --- BUG FIX: Safely cast confidence to float ---
@@ -1359,18 +1453,22 @@ def evaluate_exam_subjective_answers(exam_id, db: Session = Depends(get_db), cur
                 # marks_awarded defaults to 0.0 on submit, so "is None" was always false.
                 # Only overwrite if teacher hasn't manually graded it.
                 if not ans.teacher_feedback:
-                    ans.marks_awarded = ans.ai_suggested_marks
+                    ans.marks_awarded = clamped_suggested
                     
                 evaluated_count += 1
                 
-        # Re-calculate attempt scores
+        # Re-calculate attempt scores & sync total_marks
+        questions = db.execute(select(Question).filter_by(exam_id=exam_id, is_archived=False)).scalars().all()
+        exam_total_max_marks = round(sum(float(q.max_marks or 1.0) for q in questions), 2)
+
         for attempt in attempts:
             attempt_answers = db.execute(select(Answer).filter_by(attempt_id=attempt.id)).scalars().all()
-            total_score = sum(a.marks_awarded for a in attempt_answers if a.marks_awarded is not None)
+            total_score = sum(float(a.marks_awarded or 0.0) for a in attempt_answers if a.marks_awarded is not None)
             
             result = db.execute(select(Result).filter_by(student_id=attempt.student_id, exam_id=exam_id)).scalars().first()
             if result:
-                result.score = total_score
+                result.score = round(total_score, 2)
+                result.total_marks = exam_total_max_marks
                 
         db.commit()
         return JSONResponse(status_code=200, content={"message": f"Evaluated {evaluated_count} answers."})
@@ -1396,21 +1494,40 @@ def override_grade(answer_id, db: Session = Depends(get_db), current_user: User 
         if not ans:
             return JSONResponse(status_code=404, content={"message": "Answer not found"})
             
-        ans.marks_awarded = float(new_marks)
+        original_marks = float(ans.marks_awarded if ans.marks_awarded is not None else (ans.ai_suggested_marks or 0.0))
+        new_marks_val = float(new_marks)
+        
+        # Clamp marks between 0 and max_marks
+        question = db.get(Question, ans.question_id)
+        max_marks = float(question.max_marks or 1.0) if question else 100.0
+        clamped_marks = round(max(0.0, min(new_marks_val, max_marks)), 2)
+        
+        ans.marks_awarded = clamped_marks
+        ans.review_status = 'TEACHER_REVIEWED'
         if feedback is not None:
             ans.teacher_feedback = feedback
+            
+        # Record audit trail in EvaluationReview
+        review_entry = EvaluationReview(
+            answer_id=ans.id,
+            teacher_id=user_id,
+            original_marks=original_marks,
+            new_marks=clamped_marks,
+            comments=feedback or ""
+        )
+        db.add(review_entry)
             
         # Update Result score
         attempt = db.get(ExamAttempt, ans.attempt_id)
         attempt_answers = db.execute(select(Answer).filter_by(attempt_id=attempt.id)).scalars().all()
-        total_score = sum(a.marks_awarded for a in attempt_answers if a.marks_awarded is not None)
+        total_score = sum(float(a.marks_awarded or 0.0) for a in attempt_answers if a.marks_awarded is not None)
         
         result = db.execute(select(Result).filter_by(student_id=attempt.student_id, exam_id=attempt.exam_id)).scalars().first()
         if result:
-            result.score = total_score
+            result.score = round(total_score, 2)
             
         db.commit()
-        return JSONResponse(status_code=200, content={"message": "Grade updated"})
+        return JSONResponse(status_code=200, content={"message": "Grade updated", "marks_awarded": clamped_marks})
     except Exception as e:
         print(f"OVERRIDE GRADE ERROR: {e}")
         return JSONResponse(status_code=500, content={"message": "Error overriding grade"})
