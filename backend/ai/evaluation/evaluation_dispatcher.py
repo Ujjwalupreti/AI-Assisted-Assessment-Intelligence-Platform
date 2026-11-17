@@ -42,7 +42,7 @@ def evaluate_answer(
                 parsed = json.loads(structured_answer) if isinstance(structured_answer, str) else structured_answer
                 if isinstance(parsed, dict) and ("type" in parsed and parsed.get("type") in ("DFA", "NFA") or "transitions" in parsed):
                     inferred_type = "AUTOMATA_GRAPH"
-                elif isinstance(parsed, dict) and "table" in parsed:
+                elif isinstance(parsed, dict) and ("table" in parsed or "rows" in parsed or parsed.get("type") == "TABLE"):
                     inferred_type = "TABLE"
             except Exception:
                 pass

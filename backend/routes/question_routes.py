@@ -9,6 +9,13 @@ import json
 
 question_bp = APIRouter()
 
+VALID_QUESTION_TYPES = {
+    'MCQ', 'SUBJECTIVE', 'SHORT_ANSWER', 'LONG_ANSWER', 'DESCRIPTIVE',
+    'CONCEPTUAL', 'MATH_PROBLEM', 'DERIVATION', 'NUMERICAL', 'PROOF',
+    'ALGORITHM', 'DFA_NFA', 'STATE_TRANSITION', 'GRAPH', 'FLOWCHART',
+    'TABLE', 'MIXED'
+}
+
 @question_bp.get('/{exam_id}/questions')
 def get_questions(exam_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     try:
@@ -39,8 +46,9 @@ def get_questions(exam_id: int, db: Session = Depends(get_db), current_user: Use
                 'option_d': q.option_d,
                 'correct_option': q.correct_option,
                 'is_subjective': q.is_subjective,
-                'question_type': q.question_type,
+                'question_type': q.question_type or ('SUBJECTIVE' if q.is_subjective else 'MCQ'),
                 'reference_answer': q.reference_answer,
+                'rubric': q.rubric,
                 'topic': q.topic,
                 'difficulty': q.difficulty,
                 'bloom_level': q.bloom_level,
@@ -73,12 +81,15 @@ def add_question(exam_id: int, db: Session = Depends(get_db), current_user: User
         if current_user.role != 'teacher':
             return JSONResponse(status_code=403, content={"message": "Unauthorized"})
             
-        question_type = data.get('question_type', 'MCQ').upper()
-        if question_type not in ['MCQ', 'SUBJECTIVE']:
-            question_type = 'MCQ'
+        raw_type = str(data.get('question_type', 'MCQ')).upper()
+        if raw_type in VALID_QUESTION_TYPES:
+            question_type = raw_type
+        else:
+            question_type = 'SUBJECTIVE' if (data.get('is_subjective') or data.get('reference_answer')) else 'MCQ'
             
-        is_subjective = (question_type == 'SUBJECTIVE')
+        is_subjective = (question_type != 'MCQ')
         reference_answer = data.get('reference_answer') or data.get('correct_option')
+        rubric = data.get('rubric')
         
         if is_subjective and (not reference_answer or str(reference_answer).strip() == '' or str(reference_answer).strip().lower() == 'none'):
             return JSONResponse(status_code=400, content={"message": "Reference answer is required for subjective questions."})
@@ -98,6 +109,7 @@ def add_question(exam_id: int, db: Session = Depends(get_db), current_user: User
             is_subjective=is_subjective,
             question_type=question_type,
             reference_answer=reference_answer,
+            rubric=rubric,
             topic=data.get('topic'),
             difficulty=data.get('difficulty'),
             bloom_level=data.get('bloom_level'),
@@ -130,14 +142,18 @@ def update_question(question_id: int, db: Session = Depends(get_db), current_use
         
         if 'question_type' in data or 'is_subjective' in data:
             if 'question_type' in data:
-                q.question_type = str(data.get('question_type')).upper()
+                raw_type = str(data.get('question_type')).upper()
+                q.question_type = raw_type if raw_type in VALID_QUESTION_TYPES else ('SUBJECTIVE' if data.get('is_subjective') else 'MCQ')
             elif 'is_subjective' in data:
                 q.question_type = 'SUBJECTIVE' if data.get('is_subjective') else 'MCQ'
                 
-            q.is_subjective = (q.question_type == 'SUBJECTIVE')
+            q.is_subjective = (q.question_type != 'MCQ')
             
         if 'reference_answer' in data:
             q.reference_answer = data.get('reference_answer')
+            
+        if 'rubric' in data:
+            q.rubric = data.get('rubric')
             
         if q.is_subjective and (not q.reference_answer or str(q.reference_answer).strip() == '' or str(q.reference_answer).strip().lower() == 'none'):
             return JSONResponse(status_code=400, content={"message": "Reference answer is required for subjective questions."})
@@ -152,7 +168,6 @@ def update_question(question_id: int, db: Session = Depends(get_db), current_use
                 return JSONResponse(status_code=400, content={"message": "Marks must be greater than 0."})
             q.max_marks = marks
 
-        
         db.commit()
         return JSONResponse(status_code=200, content={"message": "Question updated"})
     except Exception as e:
@@ -186,15 +201,17 @@ def bulk_add_questions(exam_id: int, db: Session = Depends(get_db), current_user
             
         questions_list = data.get('questions', [])
         for row in questions_list:
-            question_type = str(row.get('question_type', 'MCQ')).upper()
-            if question_type not in ['MCQ', 'SUBJECTIVE']:
+            raw_type = str(row.get('question_type', 'MCQ')).upper()
+            if raw_type in VALID_QUESTION_TYPES:
+                question_type = raw_type
+            else:
                 question_type = 'SUBJECTIVE' if (str(row.get('is_subjective', '')).lower() in ['true', '1']) else 'MCQ'
                 
-            is_subjective = (question_type == 'SUBJECTIVE')
+            is_subjective = (question_type != 'MCQ')
             reference_answer = row.get('reference_answer')
+            rubric = row.get('rubric')
             
             if is_subjective and (not reference_answer or str(reference_answer).strip() == '' or str(reference_answer).strip().lower() == 'none'):
-                # Skip invalid subjective questions silently for bulk add or raise? We'll raise to be safe.
                 return JSONResponse(status_code=400, content={"message": f"Reference answer is required for subjective question: '{row.get('text', '')[:20]}...'"})
             
             try:
@@ -216,6 +233,7 @@ def bulk_add_questions(exam_id: int, db: Session = Depends(get_db), current_user
                 is_subjective=is_subjective,
                 question_type=question_type,
                 reference_answer=reference_answer,
+                rubric=rubric,
                 topic=row.get('topic'),
                 difficulty=row.get('difficulty'),
                 bloom_level=row.get('bloom_level'),
@@ -235,7 +253,6 @@ def get_question_bank(db: Session = Depends(get_db), current_user: User = Depend
         if current_user.role != 'teacher':
             return JSONResponse(status_code=403, content={"message": "Unauthorized"})
             
-        # Simplistic bank: returns all questions from all exams created by this teacher
         exams = db.execute(select(Exam).filter_by(creator_id=current_user.id)).scalars().all()
         exam_ids = [e.id for e in exams]
         
@@ -255,9 +272,13 @@ def get_question_bank(db: Session = Depends(get_db), current_user: User = Depend
                 'option_d': q.option_d,
                 'correct_option': q.correct_option,
                 'is_subjective': q.is_subjective,
+                'question_type': q.question_type or ('SUBJECTIVE' if q.is_subjective else 'MCQ'),
+                'reference_answer': q.reference_answer,
+                'rubric': q.rubric,
                 'topic': q.topic,
                 'difficulty': q.difficulty,
-                'bloom_level': q.bloom_level
+                'bloom_level': q.bloom_level,
+                'max_marks': q.max_marks
             })
         return JSONResponse(status_code=200, content=q_list)
     except Exception as e:
@@ -286,11 +307,20 @@ def clone_from_bank(exam_id: int, db: Session = Depends(get_db), current_user: U
             option_d=q.option_d,
             correct_option=q.correct_option,
             is_subjective=q.is_subjective,
+            question_type=q.question_type,
+            reference_answer=q.reference_answer,
+            rubric=q.rubric,
             topic=q.topic,
             difficulty=q.difficulty,
             bloom_level=q.bloom_level,
             max_marks=q.max_marks
         )
+        db.add(new_q)
+        db.commit()
+        return JSONResponse(status_code=201, content={"message": "Cloned successfully", "new_id": new_q.id})
+    except Exception as e:
+        print(f"Error cloning question: {e}")
+        return JSONResponse(status_code=500, content={"message": "Internal server error"})
         db.add(new_q)
         db.commit()
         return JSONResponse(status_code=201, content={"message": "Cloned successfully", "new_id": new_q.id})

@@ -74,6 +74,8 @@ def generate_json(prompt: str, model_name: str = "gemini-1.5-flash", temperature
         if not result_container["success"]:
             last_error = result_container.get('error')
             print(f"[llm_client] LLM Generation Error on attempt {attempt+1}: {last_error}")
+            if "not found" in str(last_error).lower() or "404" in str(last_error):
+                break
             # Remove response_mime_type requirement for retry just in case it caused issues
             model = genai.GenerativeModel(
                 model_name=model_name,

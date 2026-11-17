@@ -2,6 +2,7 @@
 QIS API Routes — Thin controllers. All analysis logic goes through ai.pipeline.
 """
 import json
+import re
 import threading
 import datetime
 import concurrent.futures
@@ -477,4 +478,169 @@ def get_exam_recommendations(exam_id, db: Session = Depends(get_db), current_use
         import traceback
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"message": str(e)})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PHASE 2: TEACHER AI ASSISTANCE & QUESTION IMPROVEMENT
+# ═══════════════════════════════════════════════════════════════════════════
+
+@qis_bp.post('/assist')
+def assist_question(db: Session = Depends(get_db), current_user: User = Depends(get_current_user), data: dict = Body(...)):
+    """
+    POST /api/ai/questions/assist
+    AI assistance for subjective question creation:
+    - Grammar & spelling correction
+    - Ambiguity & missing condition detection
+    - Incorrect math syntax detection
+    - Reference answer suggestion
+    - Marking rubric generation with partial marking breakdown
+    - Bloom's level and difficulty recommendation
+    - Alternative question versions
+    """
+    try:
+        text = str(data.get('text', '')).strip()
+        q_type = str(data.get('question_type', 'SUBJECTIVE')).upper()
+        topic = str(data.get('topic', '')).strip()
+        max_marks = float(data.get('max_marks', 5.0))
+        ref_ans = str(data.get('reference_answer', '')).strip()
+        
+        if not text:
+            return JSONResponse(status_code=400, content={"message": "Question text is required."})
+
+        # 1. Deterministic Analysis Layer (always runs)
+        det_issues = []
+        if len(text) < 15:
+            det_issues.append({"type": "TOO_SHORT", "severity": "high", "message": "Question statement is very brief and may lack required context."})
+        if not any(text.endswith(p) for p in ['?', '.', ':']):
+            det_issues.append({"type": "PUNCTUATION", "severity": "low", "message": "Question lacks concluding punctuation (e.g. '?' or '.')."})
+            
+        # Math & Automata specific structural checks
+        if q_type in ('MATH_PROBLEM', 'DERIVATION', 'NUMERICAL', 'PROOF'):
+            if text.count('(') != text.count(')') or text.count('[') != text.count(']'):
+                det_issues.append({"type": "MATH_SYNTAX", "severity": "high", "message": "Unbalanced parentheses or brackets detected in mathematical statement."})
+            if '^' in text and not re.search(r'\b[a-zA-Z0-9]\^[0-9a-zA-Z]', text):
+                det_issues.append({"type": "MATH_NOTATION", "severity": "medium", "message": "Check exponent notation. Use x^2 or standard LaTeX."})
+        elif q_type in ('DFA_NFA', 'STATE_TRANSITION'):
+            lower = text.lower()
+            if 'alphabet' not in lower and 'sigma' not in lower and '{0, 1}' not in lower and '{a, b}' not in lower:
+                det_issues.append({"type": "MISSING_CONDITION", "severity": "medium", "message": "No input alphabet (Sigma) explicitly stated in automata question."})
+
+        from ai.classifiers.bloom_classifier import classify_bloom
+        from ai.classifiers.difficulty_estimator import estimate_difficulty
+        
+        det_bloom = classify_bloom(text).get('label', 'Apply')
+        det_diff = estimate_difficulty(text).get('label', 'Medium')
+        
+        # Standard rubric generation fallback
+        if q_type in ('MATH_PROBLEM', 'DERIVATION'):
+            p1 = round(max_marks * 0.3, 1)
+            p2 = round(max_marks * 0.4, 1)
+            p3 = round(max_marks - p1 - p2, 1)
+            det_rubric = (
+                f"1. Problem Formulation & Setup: {p1} marks\n"
+                f"2. Intermediate Derivation & Calculation Steps: {p2} marks\n"
+                f"3. Final Result, Units & Simplification: {p3} marks"
+            )
+        elif q_type in ('DFA_NFA', 'STATE_TRANSITION'):
+            p1 = round(max_marks * 0.25, 1)
+            p2 = round(max_marks * 0.50, 1)
+            p3 = round(max_marks - p1 - p2, 1)
+            det_rubric = (
+                f"1. Formal 5-tuple Definition & State Identification: {p1} marks\n"
+                f"2. Correct Transition Logic & Determinism: {p2} marks\n"
+                f"3. Accurate Initial & Final State Designations: {p3} marks"
+            )
+        elif q_type == 'TABLE':
+            p1 = round(max_marks * 0.3, 1)
+            p2 = round(max_marks - p1, 1)
+            det_rubric = (
+                f"1. Table Schema & Column Headers: {p1} marks\n"
+                f"2. Accuracy and Completeness of Cell Entries: {p2} marks"
+            )
+        else:
+            p1 = round(max_marks * 0.4, 1)
+            p2 = round(max_marks * 0.4, 1)
+            p3 = round(max_marks - p1 - p2, 1)
+            det_rubric = (
+                f"1. Core Concept Definition & Accuracy: {p1} marks\n"
+                f"2. Key Arguments & Detailed Explanation: {p2} marks\n"
+                f"3. Clarity, Terminology & Contextual Examples: {p3} marks"
+            )
+
+        # 2. LLM Semantic Enhancement (if available)
+        llm_data = None
+        try:
+            from ai.core.llm_client import generate_json
+            prompt = f"""
+            Act as an educational assessment expert. Assist the teacher with the following subjective question.
+            
+            Question: {text}
+            Question Type: {q_type}
+            Topic: {topic or 'General'}
+            Max Marks: {max_marks}
+            Reference Answer (Current): {ref_ans or 'None provided'}
+            
+            Provide structured suggestions to improve this question:
+            1. Identify issues (grammar, ambiguity, missing conditions, or incorrect mathematical expressions).
+            2. Suggest an improved, clearer version of the question text.
+            3. Suggest a comprehensive reference answer / solution.
+            4. Generate a criteria-based marking rubric allocating total {max_marks} marks.
+            5. Suggest Bloom's Taxonomy Level ('Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create').
+            6. Suggest Difficulty ('Easy', 'Medium', 'Hard').
+            7. Extract 3-5 important keywords/concepts.
+            8. Provide 1-2 alternative phrasings of the question.
+            
+            Return ONLY a valid JSON object matching this schema:
+            {{
+                "identified_issues": [
+                    {{"type": "<AMBIGUITY|GRAMMAR|MISSING_CONDITION|MATH_ERROR>", "severity": "<low|medium|high>", "message": "<specific explanation>"}}
+                ],
+                "suggested_version": "<improved question text>",
+                "suggested_reference_answer": "<ideal answer or solution>",
+                "suggested_rubric": "<detailed marking rubric with marks breakdown>",
+                "suggested_bloom": "<Bloom level>",
+                "suggested_difficulty": "<Difficulty>",
+                "keywords": ["<keyword1>", "<keyword2>"],
+                "alternative_versions": ["<alternative phrasing 1>"]
+            }}
+            """
+            llm_data = generate_json(prompt, temperature=0.3)
+        except Exception as e:
+            print(f"[assist_question] LLM generation skipped: {e}")
+
+        # Merge results safely
+        if llm_data and isinstance(llm_data, dict) and "suggested_version" in llm_data:
+            merged_issues = det_issues + [i for i in llm_data.get("identified_issues", []) if isinstance(i, dict)]
+            return JSONResponse(status_code=200, content={
+                "status": "SUCCESS",
+                "source": "AI_LLM_ASSIST",
+                "original_question": text,
+                "identified_issues": merged_issues,
+                "suggested_version": llm_data.get("suggested_version", text),
+                "suggested_reference_answer": llm_data.get("suggested_reference_answer", ref_ans),
+                "suggested_rubric": llm_data.get("suggested_rubric", det_rubric),
+                "suggested_bloom": llm_data.get("suggested_bloom", det_bloom),
+                "suggested_difficulty": llm_data.get("suggested_difficulty", det_diff),
+                "keywords": llm_data.get("keywords", [topic] if topic else []),
+                "alternative_versions": llm_data.get("alternative_versions", [])
+            })
+
+        # Deterministic fallback return
+        return JSONResponse(status_code=200, content={
+            "status": "SUCCESS",
+            "source": "DETERMINISTIC_ASSIST",
+            "original_question": text,
+            "identified_issues": det_issues,
+            "suggested_version": text if text.endswith('?') else f"{text}?",
+            "suggested_reference_answer": ref_ans or f"Expected solution explaining core principles of {topic or 'the question'}.",
+            "suggested_rubric": det_rubric,
+            "suggested_bloom": det_bloom,
+            "suggested_difficulty": det_diff,
+            "keywords": [topic] if topic else ["core concept"],
+            "alternative_versions": [f"Explain in detail: {text}"]
+        })
+
+    except Exception as e:
+        print(f"Error in assist_question: {e}")
+        return JSONResponse(status_code=500, content={"message": f"Assistance error: {str(e)}"})
 

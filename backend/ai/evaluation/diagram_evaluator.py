@@ -24,20 +24,81 @@ def evaluate_diagram_or_file(
     if structured_answer:
         try:
             table_data = json.loads(structured_answer) if isinstance(structured_answer, str) else structured_answer
-            if isinstance(table_data, dict) and "table" in table_data:
-                rows = table_data.get("table", [])
-                return {
-                    "suggested_marks": round(max_marks * 0.80, 2), # Initial baseline
-                    "max_marks": max_marks,
-                    "explanation": f"Structured table received ({len(rows)} rows). Formatted correctly, routed for teacher approval.",
-                    "confidence": 0.75,
-                    "review_status": "NEEDS_REVIEW",
-                    "evaluation_method": "STRUCTURED_TABLE",
-                    "model_name": "table-parser-1.0",
-                    "issues": []
-                }
-        except Exception:
-            pass
+            if isinstance(table_data, dict) and ("table" in table_data or "rows" in table_data):
+                headers = table_data.get("headers", [])
+                rows = table_data.get("rows", table_data.get("table", []))
+                
+                if not rows:
+                    return {
+                        "suggested_marks": 0.0,
+                        "max_marks": max_marks,
+                        "explanation": "Structured table was submitted with zero data rows.",
+                        "confidence": 1.0,
+                        "review_status": "COMPLETED",
+                        "evaluation_method": "STRUCTURED_TABLE",
+                        "model_name": "table-evaluator-1.0",
+                        "issues": ["EMPTY_TABLE"]
+                    }
+                
+                # Check if reference_answer contains a reference table
+                ref_table_data = None
+                if reference_answer:
+                    try:
+                        ref_parsed = json.loads(reference_answer) if isinstance(reference_answer, str) else reference_answer
+                        if isinstance(ref_parsed, dict) and ("table" in ref_parsed or "rows" in ref_parsed):
+                            ref_table_data = ref_parsed
+                    except Exception:
+                        pass
+                
+                if ref_table_data:
+                    ref_headers = ref_table_data.get("headers", [])
+                    ref_rows = ref_table_data.get("rows", ref_table_data.get("table", []))
+                    
+                    total_cells = max(1, sum(len(r) if isinstance(r, list) else len(r.values()) for r in ref_rows))
+                    matched_cells = 0
+                    
+                    for r_idx, ref_r in enumerate(ref_rows):
+                        if r_idx < len(rows):
+                            stu_r = rows[r_idx]
+                            if isinstance(ref_r, list) and isinstance(stu_r, list):
+                                for c_idx, ref_cell in enumerate(ref_r):
+                                    if c_idx < len(stu_r) and str(stu_r[c_idx]).strip().lower() == str(ref_cell).strip().lower():
+                                        matched_cells += 1
+                            elif isinstance(ref_r, dict) and isinstance(stu_r, dict):
+                                for k, ref_v in ref_r.items():
+                                    if k in stu_r and str(stu_r[k]).strip().lower() == str(ref_v).strip().lower():
+                                        matched_cells += 1
+                    
+                    match_ratio = min(1.0, matched_cells / total_cells)
+                    score = round(max_marks * match_ratio, 2)
+                    conf = 1.0 if match_ratio >= 0.95 else 0.80
+                    status = "COMPLETED" if match_ratio >= 0.95 else "NEEDS_REVIEW"
+                    
+                    return {
+                        "suggested_marks": score,
+                        "max_marks": max_marks,
+                        "explanation": f"Table cell comparison: {matched_cells}/{total_cells} cells matched reference table ({int(match_ratio*100)}%).",
+                        "confidence": conf,
+                        "review_status": status,
+                        "evaluation_method": "STRUCTURED_TABLE",
+                        "model_name": "table-evaluator-1.0",
+                        "issues": [] if match_ratio >= 0.95 else ["PARTIAL_TABLE_MATCH"]
+                    }
+                else:
+                    # Baseline structured table evaluation routed for teacher confirmation
+                    baseline_marks = round(max_marks * 0.80, 2)
+                    return {
+                        "suggested_marks": baseline_marks,
+                        "max_marks": max_marks,
+                        "explanation": f"Structured table received ({len(rows)} rows, {len(headers)} columns). Baseline awarded; routed for teacher verification against reference solution.",
+                        "confidence": 0.70,
+                        "review_status": "NEEDS_REVIEW",
+                        "evaluation_method": "STRUCTURED_TABLE",
+                        "model_name": "table-evaluator-1.0",
+                        "issues": []
+                    }
+        except Exception as e:
+            print(f"[diagram_evaluator] Table parsing error: {e}")
 
     # 2. Check for File Upload (PDF / Image)
     if file_reference:

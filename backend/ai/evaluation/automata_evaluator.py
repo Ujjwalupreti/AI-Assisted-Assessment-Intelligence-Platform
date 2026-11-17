@@ -19,22 +19,36 @@ class Automaton:
         self.type = str(data.get('type', 'DFA')).upper()
         self.states = set(str(s) for s in data.get('states', []))
         self.alphabet = set(str(a) for a in data.get('alphabet', []))
-        self.initial_state = str(data.get('initial_state', ''))
-        self.final_states = set(str(f) for f in data.get('final_states', []))
+        self.initial_state = str(data.get('initial_state', data.get('start_state', '')))
+        self.final_states = set(str(f) for f in data.get('final_states', data.get('accept_states', [])))
         
         # Transitions: state -> symbol -> set of target states
         self.transitions: Dict[str, Dict[str, Set[str]]] = {s: {} for s in self.states}
         
         raw_transitions = data.get('transitions', [])
-        for t in raw_transitions:
-            src = str(t.get('from', t.get('src', '')))
-            sym = str(t.get('symbol', t.get('label', '')))
-            dst = str(t.get('to', t.get('dst', '')))
-            
-            if src in self.transitions:
-                if sym not in self.transitions[src]:
-                    self.transitions[src][sym] = set()
-                self.transitions[src][sym].add(dst)
+        if isinstance(raw_transitions, dict):
+            for src, trans_map in raw_transitions.items():
+                if isinstance(trans_map, dict):
+                    for sym, dst in trans_map.items():
+                        if src in self.transitions:
+                            if sym not in self.transitions[src]:
+                                self.transitions[src][sym] = set()
+                            if isinstance(dst, (list, set)):
+                                for d in dst:
+                                    self.transitions[src][sym].add(str(d))
+                            else:
+                                self.transitions[src][sym].add(str(dst))
+        elif isinstance(raw_transitions, list):
+            for t in raw_transitions:
+                if isinstance(t, dict):
+                    src = str(t.get('from', t.get('src', '')))
+                    sym = str(t.get('symbol', t.get('label', '')))
+                    dst = str(t.get('to', t.get('dst', '')))
+                    
+                    if src in self.transitions:
+                        if sym not in self.transitions[src]:
+                            self.transitions[src][sym] = set()
+                        self.transitions[src][sym].add(dst)
 
     def validate_structure(self) -> List[str]:
         """Validates formal 5-tuple definitions."""
