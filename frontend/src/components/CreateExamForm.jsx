@@ -6,7 +6,6 @@ import AssessmentModeSelector from './assessment/AssessmentModeSelector';
 import AutomatedAssemblyPreview from './assessment/AutomatedAssemblyPreview';
 import { PenTool } from 'lucide-react';
 
-
 const CreateExamForm = ({ onSuccess }) => {
   const { API_BASE_URL, getHeaders } = useAuth();
   
@@ -15,7 +14,7 @@ const CreateExamForm = ({ onSuccess }) => {
       duration: '', 
       start_date: '', 
       end_date: '', 
-      password: '', //  Exam Password State
+      password: '', // Exam Password State
       creation_mode: 'manual',
       question_count: 10
   });
@@ -60,7 +59,7 @@ const CreateExamForm = ({ onSuccess }) => {
                 topics: cleanBlueprint.topic_distribution,
                 difficulty_distribution: cleanBlueprint.difficulty_distribution,
                 question_count: parseInt(formData.question_count),
-                exam_type: "Objective", // Assuming Objective for MVP
+                exam_type: "Objective",
                 bloom_distribution: cleanBlueprint.bloom_distribution
             };
             const res = await examService.previewAssembly(payload);
@@ -133,7 +132,7 @@ const CreateExamForm = ({ onSuccess }) => {
                             onChange={e => setFormData({...formData, duration: e.target.value})} />
                     </div>
                     
-                    {/*  PASSWORD FIELD */}
+                    {/* PASSWORD FIELD */}
                     <div className="form-group">
                         <label> Exam Password (Optional)</label>
                         <input type="text" 

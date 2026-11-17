@@ -1,16 +1,122 @@
 import json
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
-from models import Exam, Question, QuestionAiAnalysis, ExamAnalysis, AIJob, User
+from models import Exam, Question, QuestionAiAnalysis, ExamAnalysis, AIJob, User, CourseDocument, DocumentChunk
 from database import get_db
 from auth_middleware import get_teacher_user
 from ai.core.pipeline import analyze_question_qis
 from ai.core.qis_persistence import persist_qis_analysis
 from ai.generation.question_generator import generate_candidate_question
 from ai.assembly.assessment_assembler import assemble_assessment
+from ai.syllabus_analyzer import analyze_syllabus_text, generate_syllabus_questions
+from ai.rag.document_processor import process_document_text
+from ai.rag.vector_store import store_document_chunks
 import threading
 
 intelligence_bp = APIRouter()
+
+@intelligence_bp.get('/knowledge-documents')
+def list_knowledge_documents(db: Session = Depends(get_db), teacher: User = Depends(get_teacher_user)):
+    """List all available syllabus / course documents in the knowledge repository."""
+    docs = db.query(CourseDocument).order_by(CourseDocument.created_at.desc()).all()
+    return [{
+        "id": d.id,
+        "title": d.title,
+        "course_name": d.course_name,
+        "content_preview": (d.content_text[:120] + "...") if d.content_text else "",
+        "content_text": d.content_text,
+        "created_at": d.created_at.isoformat() if d.created_at else ""
+    } for d in docs]
+
+@intelligence_bp.post('/analyze-syllabus')
+def analyze_syllabus_route(data: dict = Body(...), db: Session = Depends(get_db), teacher: User = Depends(get_teacher_user)):
+    """
+    Syllabus & JD Intelligence (HackerEarth-style):
+    Analyzes syllabus text, extracts core topics, recommends optimal weightages & Bloom's levels,
+    and indexes document into Knowledge Base.
+    """
+    try:
+        content_text = data.get("syllabus_text") or data.get("content_text") or data.get("content")
+        title = data.get("title", "Course Syllabus")
+        course_name = data.get("course_name", "General Curriculum")
+        doc_id = data.get("document_id")
+
+        if doc_id:
+            doc = db.get(CourseDocument, doc_id)
+            if doc:
+                content_text = doc.content_text
+                title = doc.title
+                course_name = doc.course_name or course_name
+
+        if not content_text or len(content_text.strip()) < 10:
+            raise HTTPException(status_code=400, detail="Syllabus or Job Description content is required (min 10 characters).")
+
+        # 1. Ingest into CourseDocument if new
+        saved_doc_id = doc_id
+        if not doc_id:
+            try:
+                new_doc = CourseDocument(
+                    title=title,
+                    content_text=content_text,
+                    course_name=course_name,
+                    created_by=teacher.id
+                )
+                db.add(new_doc)
+                db.commit()
+                db.refresh(new_doc)
+                saved_doc_id = new_doc.id
+
+                chunks = process_document_text(content_text)
+                if chunks:
+                    store_document_chunks(new_doc.id, chunks)
+            except Exception as e:
+                db.rollback()
+                print(f"[RAG Ingest Notice] Proceeding with in-memory analysis: {e}")
+
+        # 2. Extract and analyze topics
+        analysis_result = analyze_syllabus_text(content_text, title=title, course_name=course_name)
+        analysis_result["document_id"] = saved_doc_id
+        analysis_result["title"] = title
+        analysis_result["course_name"] = course_name
+        analysis_result["syllabus_preview"] = content_text[:300]
+
+        return analysis_result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Syllabus analysis failed: {str(e)}")
+
+@intelligence_bp.post('/generate-syllabus-questions')
+def generate_questions_route(data: dict = Body(...), db: Session = Depends(get_db), teacher: User = Depends(get_teacher_user)):
+    """
+    Generates assessment questions directly grounded in the curated syllabus topics.
+    Supports Objective MCQs and Subjective solutions (Theory, Math derivations, Automata DFA/NFA).
+    """
+    try:
+        topics = data.get("topics", [])
+        total_count = int(data.get("question_count", 10))
+        exam_type = data.get("exam_type", "Mixed")
+        syllabus_text = data.get("syllabus_text", "")
+
+        if not topics:
+            raise HTTPException(status_code=400, detail="At least one topic must be selected.")
+
+        questions = generate_syllabus_questions(
+            topics=topics,
+            total_count=total_count,
+            exam_type=exam_type,
+            syllabus_context=syllabus_text
+        )
+
+        return {
+            "total_questions": len(questions),
+            "exam_type": exam_type,
+            "questions": questions
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Question generation failed: {str(e)}")
 
 @intelligence_bp.post('/assemble')
 def preview_assembly(data: dict = Body(...), db: Session = Depends(get_db), teacher: User = Depends(get_teacher_user)):
