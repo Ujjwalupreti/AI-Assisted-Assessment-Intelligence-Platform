@@ -58,3 +58,4 @@ Based on empirical test results, verified live server execution, complete databa
 2. **Robust Security & Data Integrity:** Answer keys are redacted from student network payloads, grade overrides are strictly gated by teacher authorization (HTTP 403), file uploads prevent path traversal, and clipboard paste actions are tracked with duplicate suppression.
 3. **Database Consistency:** Schema extensions are applied via reproducible migration scripts, and immutable versioning logs every draft modification.
 4. **Prerequisite for Production Deployment:** To advance from **STAGING READY** to **PRODUCTION READY**, the target production infrastructure requires multi-node horizontal scaling configuration (AWS ALB + ECS/EKS or multiple Uvicorn workers behind Nginx) and Redis for distributed session caching when handling 1,000+ simultaneous candidates.
+

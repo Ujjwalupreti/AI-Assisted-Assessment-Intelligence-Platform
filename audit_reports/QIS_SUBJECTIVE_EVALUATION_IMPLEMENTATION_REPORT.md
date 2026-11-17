@@ -90,3 +90,4 @@ The full test suite (`backend/tests/test_subjective_evaluation_full.py`) was exe
 | `test_15` | Out-of-bounds score clamping | Dispatcher Guardrail | Strictly $0 \le marks \le max$ | Clamped, unified schema | **PASSED** |
 
 **Summary:** 15/15 unit and integration tests passed in 25.009s with zero errors.
+

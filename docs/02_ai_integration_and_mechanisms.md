@@ -1,4 +1,5 @@
 # Project Report: AI-Powered Intelligent Assessment & Proctoring System (QIS)
+
 ## File 2: AI Integration, RAG Architectures, and Minimal-AI Subjective Evaluation
 
 ---
@@ -38,14 +39,14 @@ graph TD
 
 #### Comparison Matrix: Cloud LLM vs Dedicated Small Model
 
-| Feature / Metric | Cloud LLM (Gemini 1.5 Flash) | Dedicated Small Model (`all-MiniLM-L6-v2` / YOLOv8n) |
-| :--- | :--- | :--- |
-| **Model Size** | Billion-parameter scale (Hosted) | 22.7 Million parameters (Local lightweight footprint) |
-| **Hosting & Execution** | Cloud API (HTTPS REST endpoint) | 100% On-Premise / Local CPU / Local GPU |
-| **Latency per Call** | 800 ms – 3,500 ms (Network + Generation) | 5 ms – 25 ms (Near-instantaneous matrix multiplication) |
-| **Financial Cost** | Variable token billing per generation | $0.00 (Zero marginal operational cost) |
-| **Network Dependency** | Active Internet connection required | Fully functional in offline / intranet environments |
-| **Best Used For** | Synthetic question generation, complex reasoning | Semantic search, deduplication, concept matching, grading |
+| Feature / Metric              | Cloud LLM (Gemini 1.5 Flash)                     | Dedicated Small Model (`all-MiniLM-L6-v2` / YOLOv8n)    |
+| :---------------------------- | :----------------------------------------------- | :-------------------------------------------------------- |
+| **Model Size**          | Billion-parameter scale (Hosted)                 | 22.7 Million parameters (Local lightweight footprint)     |
+| **Hosting & Execution** | Cloud API (HTTPS REST endpoint)                  | 100% On-Premise / Local CPU / Local GPU                   |
+| **Latency per Call**    | 800 ms – 3,500 ms (Network + Generation)        | 5 ms – 25 ms (Near-instantaneous matrix multiplication)  |
+| **Financial Cost**      | Variable token billing per generation            | $0.00 (Zero marginal operational cost)                    |
+| **Network Dependency**  | Active Internet connection required              | Fully functional in offline / intranet environments       |
+| **Best Used For**       | Synthetic question generation, complex reasoning | Semantic search, deduplication, concept matching, grading |
 
 ---
 
@@ -80,6 +81,7 @@ flowchart TD
 ```
 
 #### Grounded Question Generation Prompt Design
+
 When `use_rag=True`, context extracted from the vector store is injected into the system prompt to anchor the generative model:
 
 ```python
@@ -139,6 +141,7 @@ flowchart LR
 ```
 
 #### A. Bloom's Taxonomy Classification (`ai/bloom_classifier.py`)
+
 - **Primary Method (Deterministic)**: Evaluates action verbs and syntactic patterns against curated synonym groups across all 6 levels:
   - *Create*: design, construct, develop, formulate, synthesize, write a program.
   - *Evaluate*: critique, justify, appraise, defend, rate, rank.
@@ -150,7 +153,9 @@ flowchart LR
 - **LLM Fallback**: If heuristic confidence falls below `0.65`, Gemini is invoked with an assessment-expert prompt to arbitrate nuance.
 
 #### B. Difficulty Estimation (`ai/difficulty_estimator.py`)
+
 Rather than simplistically equating Bloom level with difficulty (e.g., assuming all "Apply" questions are Hard), the system computes difficulty using multi-signal heuristics:
+
 1. **Syntactic & Textual Complexity**: Length of question stem and option clauses.
 2. **Technical Domain Jargon Density**: Ratio of specialized technical terminology to common words.
 3. **Cognitive Distractor Plausibility**: For MCQs, option length parity and plausibility.
@@ -158,8 +163,13 @@ Rather than simplistically equating Bloom level with difficulty (e.g., assuming 
 5. **Threshold Fallback**: If heuristic confidence $< 0.65$, Gemini verifies prerequisite depth and problem complexity.
 
 #### C. Automated Assessment Assembly
+
 Once questions are categorized, `ai/assessment_assembler.py` translates the teacher's desired percentages into exact integer quotas using a largest-remainder algorithm:
-$$\text{Quota}_i = \left\lfloor \frac{P_i}{100} \cdot N \right\rfloor + R_i$$
+
+$$
+\text{Quota}_i = \left\lfloor \frac{P_i}{100} \cdot N \right\rfloor + R_i
+$$
+
 A greedy optimization selector pulls questions from the pool to maximize blueprint alignment while minimizing duplicate risk and maximizing overall quality.
 
 ---
@@ -182,18 +192,18 @@ flowchart TD
         RA --> ST_ENC
         RUB --> ST_ENC
         SA --> ST_ENC
-        
+    
         V_RA["Vector: Reference Answer (384-d)"]
         V_RUB["Vectors: Rubric Key Points"]
         V_SA["Vector: Student Answer (384-d)"]
-        
+    
         ST_ENC --> V_RA & V_RUB & V_SA
-        
+    
         COS1["Cosine Similarity (SA vs RA)"]
         COS2["Concept Coverage Metric (SA vs Rubric Points)"]
         V_RA & V_SA --> COS1
         V_RUB & V_SA --> COS2
-        
+    
         SCORE_CALC["Weighted Marks Allocation: Score = MaxMarks * (0.6 * CosSim + 0.4 * RubricCov)"]
         COS1 & COS2 --> SCORE_CALC
     end
@@ -212,19 +222,29 @@ flowchart TD
 ```
 
 #### Mathematical Formulation of Minimal AI Grading
+
 Let $\vec{v}_{\text{student}}$ be the 384-dimensional embedding of the student's answer, and $\vec{v}_{\text{ref}}$ be the embedding of the instructor's reference answer:
 
-$$\text{Cosine Similarity } S_{\text{sem}} = \frac{\vec{v}_{\text{student}} \cdot \vec{v}_{\text{ref}}}{\|\vec{v}_{\text{student}}\| \|\vec{v}_{\text{ref}}\|}$$
+$$
+\text{Cosine Similarity } S_{\text{sem}} = \frac{\vec{v}_{\text{student}} \cdot \vec{v}_{\text{ref}}}{\|\vec{v}_{\text{student}}\| \|\vec{v}_{\text{ref}}\|}
+$$
 
 For rubric evaluation, suppose the rubric specifies $m$ mandatory key concepts $\{c_1, c_2, \dots, c_m\}$ embedded as $\{\vec{u}_1, \vec{u}_2, \dots, \vec{u}_m\}$. The student answer is split into sentences $\{s_1, \dots, s_n\}$ embedded as $\{\vec{w}_1, \dots, \vec{w}_n\}$. The rubric concept coverage $C_{\text{rubric}}$ is defined as:
 
-$$C_{\text{rubric}} = \frac{1}{m} \sum_{j=1}^{m} \max_{1 \le i \le n} \left( \frac{\vec{w}_i \cdot \vec{u}_j}{\|\vec{w}_i\| \|\vec{u}_j\|} \right)$$
+$$
+C_{\text{rubric}} = \frac{1}{m} \sum_{j=1}^{m} \max_{1 \le i \le n} \left( \frac{\vec{w}_i \cdot \vec{u}_j}{\|\vec{w}_i\| \|\vec{u}_j\|} \right)
+$$
 
 The final suggested mark $M_{\text{suggested}}$ is computed as:
-$$M_{\text{suggested}} = M_{\text{max}} \cdot \left( \alpha \cdot S_{\text{sem}} + (1 - \alpha) \cdot C_{\text{rubric}} \right)$$
+
+$$
+M_{\text{suggested}} = M_{\text{max}} \cdot \left( \alpha \cdot S_{\text{sem}} + (1 - \alpha) \cdot C_{\text{rubric}} \right)
+$$
+
 where $\alpha \in [0, 1]$ balances holistic similarity with specific concept coverage (default $\alpha = 0.5$).
 
 #### Confidence Scoring & Safeguards
+
 - **High Confidence ($\ge 0.70$)**: The student answer demonstrates high semantic alignment and complete concept coverage. Marks are populated with an explanatory breakdown.
 - **Low Confidence ($< 0.70$)**: Indicates ambiguous phrasing, mixed relevance, or boundary-case length. The system automatically tags `review_status = "NEEDS_REVIEW"`, prioritizing it on the teacher's grading queue.
 - **Offline / Zero-AI Heuristic Fallback**: If the local neural encoder cannot be loaded, the system falls back to `difflib.SequenceMatcher` token similarity (`backend/ai/subjective_evaluator.py`, line 70), ensuring evaluation never crashes the server.
@@ -238,21 +258,21 @@ The proctoring layer combines lightweight, real-time computer vision models to e
 ```mermaid
 flowchart LR
     FRAME["Incoming Video Frame (Base64 JPEG)"] --> DECODE["OpenCV cv2.imdecode"]
-    
+  
     subgraph VisionInference ["Parallel Vision Analysis"]
         DECODE --> HAAR["OpenCV Haar Cascade (Face Tracker)"]
         DECODE --> YOLO["Ultralytics YOLOv8n (Object Detector)"]
     end
-    
+  
     HAAR --> CHECK_FACE{"Face Count?"}
     CHECK_FACE -- 0 for > 5s --> EV_NOFACE["Proctoring Event: FACE_MISSING"]
     CHECK_FACE -- 1 --> SAFE_FACE["Face Present: Status Safe"]
     CHECK_FACE -- > 1 --> EV_MULTIFACE["Proctoring Event: MULTIPLE_FACES"]
-    
+  
     YOLO --> CHECK_OBJ{"Class in [cell phone, laptop, book]?"}
     CHECK_OBJ -- "Yes & Conf > 0.50" --> EV_PHONE["Proctoring Event: CONTRABAND_DETECTED"]
     CHECK_OBJ -- "No" --> SAFE_OBJ["No Contraband: Status Safe"]
-    
+  
     EV_NOFACE & EV_MULTIFACE & EV_PHONE --> SAVE_IMG["Save Compressed Frame to static/uploads/"]
     SAVE_IMG --> DB_EVENT["Insert into ProctoringEvent Table"]
 ```
@@ -267,5 +287,5 @@ flowchart LR
    - Operates with an inference threshold of $0.50$, recording bounding box coordinates alongside the logged snapshot.
 
 ---
-*Next Document: `docs/03_teacher_student_benefits_and_dashboard.md` for Teacher/Student Benefits and Dashboard Analytics.*
 
+*Next Document: `docs/03_teacher_student_benefits_and_dashboard.md` for Teacher/Student Benefits and Dashboard Analytics.*

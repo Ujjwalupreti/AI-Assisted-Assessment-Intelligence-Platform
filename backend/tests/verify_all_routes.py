@@ -57,11 +57,11 @@ async def run_route_audit():
 
     # 1. Seed Initial Users
     db = SessionLocal()
-    teacher = User(username="prof_sharma", email="sharma@college.edu", role="teacher", is_active=True)
+    teacher = User(username="prof_sharma", email="sharma@college.edu", role="teacher", is_active=True, is_verified=True)
     teacher.set_password("Teacher123!")
-    student = User(username="ujjwal_student", email="student@college.edu", role="student", enrollment_id="STU101", is_active=True)
+    student = User(username="ujjwal_student", email="student@college.edu", role="student", enrollment_id="STU101", is_active=True, is_verified=True)
     student.set_password("Student123!")
-    admin = User(username="admin_user", email="admin@college.edu", role="admin", is_active=True)
+    admin = User(username="admin_user", email="admin@college.edu", role="admin", is_active=True, is_verified=True)
     admin.set_password("Admin123!")
     db.add_all([teacher, student, admin])
     db.commit()
@@ -107,6 +107,7 @@ async def run_route_audit():
         r = await client.post("/api/auth/login", json={"username": "prof_sharma", "password": "WrongPassword"})
         record("Invalid Credential Rejection", "POST", "/api/auth/login", r.status_code, 401, r.status_code == 401, "Rejected correctly")
 
+        client.cookies.clear()
         r = await client.get("/api/exams")
         record("Unauthenticated Protection", "GET", "/api/exams", r.status_code, 401, r.status_code == 401, "Bearer challenge")
 

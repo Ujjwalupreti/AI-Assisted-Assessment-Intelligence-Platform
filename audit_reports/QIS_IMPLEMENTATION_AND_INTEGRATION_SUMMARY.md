@@ -86,3 +86,4 @@ python -u tests/test_answer_integrity_and_security.py
 cd ../frontend
 npm run build
 ```
+

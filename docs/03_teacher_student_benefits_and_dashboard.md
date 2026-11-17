@@ -1,4 +1,5 @@
 # Project Report: AI-Powered Intelligent Assessment & Proctoring System (QIS)
+
 ## File 3: Stakeholder Value Proposition & Exam Intelligence Dashboards
 
 ---
@@ -28,13 +29,15 @@ mindmap
 #### Detailed Breakdown of Benefits
 
 #### A. For Teachers / Instructors
-1. **Dramatic Reductions in Authoring Time**: Instead of writing dozens of balanced questions manually, teachers input high-level blueprint goals (e.g., 40% Algorithms, 30% Hard, 30% Apply) and let the Greedy Assembler or RAG Generator curate balanced assessments in seconds.
+
+1. **Dramatic Reductions in Authoring Time**: Instead of writing dozens of balanced questions manually, teachers input high-level blueprint goals (e.g., 40% Algorithms, 30% Hard, 30% Apply) and let the Greedy Assembler or RAG Generator curate balanced assessments in seconds.8
 2. **Elimination of Subjective Grading Fatigue**: Long-form answers are pre-evaluated by semantic search and rubric concept matching. Teachers only need to inspect questions tagged with `NEEDS_REVIEW` ($<0.70$ confidence) or confirm pre-calculated marks, cutting grading time by over 75%.
 3. **Objective Evaluation Consistency**: AI grading applies identical rubric criteria across all student submissions, removing unconscious bias, fatigue-based grade drift, or halo effects.
 4. **Empirical Item Calibration**: Teachers can verify if a question intended to be "Easy" was actually answered correctly by students, highlighting confusing or poorly worded items.
 5. **Auditable Integrity Records**: Instead of reviewing hours of raw webcam video, instructors get a curated gallery of timestamped violation snapshots (phone detection, tab-switch counts, facial absences) for targeted review.
 
 #### B. For Students / Test-Takers
+
 1. **Equalized Fairness Across Exam Slots**: When tests are administered across multiple time slots, the AI Slot Divider ensures all variants have equal aggregate difficulty, topic coverage, and cognitive depth, eliminating unfair sets.
 2. **Transparent, Rubric-Based Feedback**: In the post-exam review, students don't just see a raw score—they receive explanations showing exactly which required concepts were present, partially addressed, or missed.
 3. **Immediate Objective Results**: MCQs and factual questions are scored instantly upon submission, reducing post-exam anxiety.
@@ -45,7 +48,7 @@ mindmap
 
 ### 2. Student Final Score Calculation & Exam Activity Tracking
 
-```mermaid
+```Shell
 flowchart TD
     subgraph Submission ["Student Submits Exam"]
         OBJ["Objective Answers (MCQ)"]
@@ -62,7 +65,7 @@ flowchart TD
         AI_MARKS --> CONF_CHECK{"Confidence >= 0.70?"}
         CONF_CHECK -- Yes --> AUTO_SCORE["Marks Awarded = Suggested Marks (Status: COMPLETED)"]
         CONF_CHECK -- No --> TEACHER_QUEUE["Marks Awarded = Suggested Marks (Status: NEEDS_REVIEW)"]
-        
+    
         AUTO_SCORE & TEACHER_QUEUE --> TEACHER_MOD{"Teacher Overrides Grade?"}
         TEACHER_MOD -- Yes --> FINAL_SUBJ["Marks Awarded = Teacher Override"]
         TEACHER_MOD -- No --> FINAL_SUBJ
@@ -81,25 +84,31 @@ flowchart TD
 ```
 
 #### Final Score Calculation Architecture
+
 The final score is computed as:
-$$\text{Final Score} = \sum_{i \in \text{MCQ}} \left( \mathbb{I}(\text{student\_opt}_i = \text{key}_i) \cdot \text{marks}_i \right) + \sum_{j \in \text{Subj}} \text{marks\_awarded}_j$$
+
+$$
+\text{Final Score} = \sum_{i \in \text{MCQ}} \left( \mathbb{I}(\text{student\_opt}_i = \text{key}_i) \cdot \text{marks}_i \right) + \sum_{j \in \text{Subj}} \text{marks\_awarded}_j
+$$
 
 Where:
+
 - $\text{marks\_awarded}_j = \text{teacher\_override}_j$ if the teacher manually adjusts the score.
 - $\text{marks\_awarded}_j = \text{ai\_suggested\_marks}_j$ if no manual adjustment is made.
 - Every answer retains `ai_confidence`, `ai_model_name`, and `ai_explanation` for full auditability.
 
 #### Exam Activities Monitored in Real Time
+
 During an exam, the student interface continuously monitors key behaviors:
 
-| Event Type | Detection Mechanism | Threshold / Rule | Severity |
-| :--- | :--- | :--- | :--- |
-| **Tab Switch / App Focus Lost** | Window `blur` & Page Visibility API | Triggered whenever window loses focus | High |
-| **Fullscreen Breach** | HTML5 Fullscreen Change Event | Triggered when user exits fullscreen | High |
-| **Face Missing** | OpenCV Haar Cascade (`analyze_frame`) | Absence continuous for $>5$ seconds | Medium |
-| **Multiple Faces** | OpenCV Haar Cascade (`analyze_frame`) | $>1$ bounding box detected | High |
-| **Unauthorized Device** | Ultralytics YOLOv8 (`analyze_frame`) | Cell phone / laptop detected (conf $>0.50$) | Critical |
-| **Voice / Noise Level** | Web Audio API RMS volume analyser | Decibel level sustained above ambient floor | Medium |
+| Event Type                            | Detection Mechanism                     | Threshold / Rule                              | Severity |
+| :------------------------------------ | :-------------------------------------- | :-------------------------------------------- | :------- |
+| **Tab Switch / App Focus Lost** | Window `blur` & Page Visibility API   | Triggered whenever window loses focus         | High     |
+| **Fullscreen Breach**           | HTML5 Fullscreen Change Event           | Triggered when user exits fullscreen          | High     |
+| **Face Missing**                | OpenCV Haar Cascade (`analyze_frame`) | Absence continuous for $>5$ seconds         | Medium   |
+| **Multiple Faces**              | OpenCV Haar Cascade (`analyze_frame`) | $>1$ bounding box detected                  | High     |
+| **Unauthorized Device**         | Ultralytics YOLOv8 (`analyze_frame`)  | Cell phone / laptop detected (conf $>0.50$) | Critical |
+| **Voice / Noise Level**         | Web Audio API RMS volume analyser       | Decibel level sustained above ambient floor   | Medium   |
 
 ---
 
@@ -124,6 +133,7 @@ graph LR
 ```
 
 #### A. Teacher Dashboard & Exam Intelligence Dashboard
+
 1. **Blueprint Compliance Monitor**:
    - Compares the actual composition of the question bank against the defined blueprint in real time.
    - Displays percentage bars for Topic coverage, Difficulty balance, and Bloom’s Taxonomy alignment.
@@ -163,6 +173,7 @@ graph LR
 ```
 
 #### B. Student Exam Dashboard & Learning Analytics
+
 1. **Pre-Exam Verification Panel (`PreExamAuth.jsx`)**:
    - Hardware check confirms working microphone and camera before access is granted.
    - Captures reference ID photo and baseline facial profile for proctoring comparison.
@@ -197,5 +208,5 @@ graph LR
 ```
 
 ---
-*Next Document: `docs/04_difficulty_bloom_topic_with_and_without_ai.md` for Comparative Technical Analysis of Classification & Selection.*
 
+*Next Document: `docs/04_difficulty_bloom_topic_with_and_without_ai.md` for Comparative Technical Analysis of Classification & Selection.*
