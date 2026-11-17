@@ -15,14 +15,31 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Security Configuration
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'qis-dev-secret-key-change-in-production')
+    # Security & JWT Configuration
+    SECRET_KEY = os.environ.get('SECRET_KEY') or os.environ.get('JWT_SECRET', 'qis-dev-secret-key-change-in-production')
+    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', '30'))
+    REFRESH_TOKEN_EXPIRE_DAYS_STANDARD = int(os.environ.get('REFRESH_TOKEN_EXPIRE_DAYS_STANDARD', '7'))
+    REFRESH_TOKEN_EXPIRE_DAYS_REMEMBER = int(os.environ.get('REFRESH_TOKEN_EXPIRE_DAYS_REMEMBER', '30'))
     
     # External AI Services (Google Gemini) - Safe lookup from environment
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY', '')
     
     # Frontend / CORS Configuration
     FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+
+    # Email Service Configuration
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_USERNAME = os.environ.get('EMAIL_USERNAME', '')
+    EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD', '')
+    EMAIL_FROM = os.environ.get('EMAIL_FROM', 'no-reply@qis-assessment.com')
+    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'true').lower() in ('true', '1')
+
+    # OAuth 2.0 Credentials
+    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '').strip()
+    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '').strip()
+    GITHUB_CLIENT_ID = os.environ.get('GITHUB_CLIENT_ID', '').strip()
+    GITHUB_CLIENT_SECRET = os.environ.get('GITHUB_CLIENT_SECRET', '').strip()
 
     # QIS Duplicate Detection Thresholds
     DUPLICATE_HIGH_THRESHOLD = float(os.environ.get('DUPLICATE_HIGH_THRESHOLD', '0.90'))

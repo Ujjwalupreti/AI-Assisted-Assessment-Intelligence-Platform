@@ -17,7 +17,8 @@ def create_app():
         "http://localhost:5173", "http://127.0.0.1:5173",
         "http://localhost:5174", "http://127.0.0.1:5174",
         "http://localhost:5175", "http://127.0.0.1:5175",
-        "https://localhost:5173", "https://localhost:5174", "https://localhost:5175"
+        "https://localhost:5173", "https://localhost:5174", "https://localhost:5175",
+        "https://127.0.0.1:5173", "https://127.0.0.1:5174", "https://127.0.0.1:5175"
     ]
     app.add_middleware(
         CORSMiddleware,
@@ -29,7 +30,8 @@ def create_app():
     )
 
     # Import API Routers
-    from routes.main_routes import auth_bp, exam_bp
+    from routes.auth_routes import auth_bp
+    from routes.main_routes import exam_bp
     from routes.question_routes import question_bp
     from routes.exam_intelligence_routes import intelligence_bp
     from routes.attempt_routes import attempt_bp

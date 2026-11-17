@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, Foreig
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from database import Base
+import bcrypt
 
 class User(Base):
     __tablename__ = 'user'
@@ -9,17 +10,36 @@ class User(Base):
     enrollment_id = Column(String(20), unique=True, nullable=True) 
     username = Column(String(80), unique=True, nullable=False)
     email = Column(String(120), unique=True, nullable=False)
+    full_name = Column(String(120), nullable=True)
     password_hash = Column(String(500)) 
     role = Column(String(20), default='student') 
     is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        if not password:
+            self.password_hash = None
+            return
+        # Hash using modern bcrypt
+        salt = bcrypt.gensalt(rounds=12)
+        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
     def check_password(self, password):
-        if not self.password_hash:
+        if not self.password_hash or not password:
             return False
-        return check_password_hash(self.password_hash, password)
+        # Support modern bcrypt hashes
+        if self.password_hash.startswith('$2b$') or self.password_hash.startswith('$2a$') or self.password_hash.startswith('$2y$'):
+            try:
+                return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+            except Exception:
+                return False
+        # Backwards compatible fallback to werkzeug pbkdf2 / scrypt
+        try:
+            return check_password_hash(self.password_hash, password)
+        except Exception:
+            return False
 
 class AIJob(Base):
     __tablename__ = 'ai_job'
@@ -372,3 +392,55 @@ class ExamSlotQuestion(Base):
     slot_id = Column(Integer, ForeignKey('exam_slot.id', ondelete='CASCADE'), nullable=False)
     question_id = Column(Integer, ForeignKey('question.id'), nullable=False)
     order = Column(Integer, default=0)
+
+# ==========================================
+# 🔐 AUTHENTICATION & SECURITY MODELS
+# ==========================================
+
+class EmailVerificationToken(Base):
+    __tablename__ = 'email_verification_token'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id', ondelete='CASCADE'), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    used_at = Column(DateTime, nullable=True)
+
+class PasswordResetToken(Base):
+    __tablename__ = 'password_reset_token'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id', ondelete='CASCADE'), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    used_at = Column(DateTime, nullable=True)
+
+class RefreshToken(Base):
+    __tablename__ = 'refresh_token'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id', ondelete='CASCADE'), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    device_info = Column(String(255), nullable=True)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    revoked_at = Column(DateTime, nullable=True)
+
+class OAuthAccount(Base):
+    __tablename__ = 'oauth_account'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id', ondelete='CASCADE'), nullable=False, index=True)
+    provider = Column(String(50), nullable=False)  # 'google', 'github'
+    provider_user_id = Column(String(100), nullable=False, index=True)
+    provider_email = Column(String(120), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class SecurityLog(Base):
+    __tablename__ = 'security_log'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id', ondelete='SET NULL'), nullable=True, index=True)
+    event_type = Column(String(50), nullable=False, index=True)  # LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT, etc.
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+    details = Column(Text, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+
