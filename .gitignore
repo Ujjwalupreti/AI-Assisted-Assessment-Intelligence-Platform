@@ -52,12 +52,14 @@ backend/.env
 *.bin
 *.onnx
 
-# Databases
+# Databases & Local Instances
 *.db
 *.sqlite
 *.sqlite3
-instance/*.db
-backend/instance/*.db
+*.db.backup*
+instance/
+backend/instance/
+*.jsonl
 
 # Backups
 *.bak
@@ -86,8 +88,8 @@ backend/model_mismatch_report.txt
 backend/qis_verification_report.json
 backend/scripts/legacy_patches/
 backend/tests/scratch_qis_test.py
-backend/static/uploads/*
-backend/static/*
+static/
+backend/static/
 
 # Frontend Unused Assets
 frontend/emoji_names.json
