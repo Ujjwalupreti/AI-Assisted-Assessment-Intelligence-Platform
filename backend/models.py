@@ -229,6 +229,21 @@ class AnswerIntegrityEvent(Base):
     review_status = Column(String(50), default='PENDING') # PENDING, REVIEWED, DISMISSED
 
 
+class QuestionTimeLog(Base):
+    __tablename__ = 'question_time_log'
+    id = Column(Integer, primary_key=True)
+    attempt_id = Column(Integer, ForeignKey('exam_attempt.id'), nullable=False, index=True)
+    question_id = Column(Integer, ForeignKey('question.id'), nullable=False, index=True)
+    active_seconds = Column(Float, default=0.0)
+    elapsed_seconds = Column(Float, default=0.0)
+    visit_count = Column(Integer, default=1)
+    first_viewed_at = Column(DateTime, default=datetime.utcnow)
+    last_viewed_at = Column(DateTime, default=datetime.utcnow)
+    answer_started_at = Column(DateTime, nullable=True)
+    answer_submitted_at = Column(DateTime, nullable=True)
+
+
+
 class QuestionVersion(Base):
     __tablename__ = 'question_version'
     id = Column(Integer, primary_key=True)
